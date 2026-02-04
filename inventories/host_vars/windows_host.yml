@@ -10,3 +10,7 @@ pasw_adm_antor: "OAsJj47vwr"
 
 # Диапозон портов для телематики
 tele_port_range: "2238-2250"
+iis_ae_site_port_range: "8093-8095"
+http_port_ae_site: "8090"
+https_port1_ae_site: "8091"
+https_port2_ae_site: "8092"

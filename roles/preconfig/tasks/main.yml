@@ -35,6 +35,11 @@
     path: "{{ antor_root_folder }}"
     state: directory
 
+- name: Create ANTOR distr directory if it doesn't exist
+  ansible.windows.win_file:
+    path: "{{ distr_folder_host }}"
+    state: directory
+
 - name: Create ANTOR user
   ansible.windows.win_user:
     name: "{{ user_antor }}"
@@ -55,6 +60,12 @@
   win_chocolatey:
     name: 7zip.install
     state: present
+
+- name: Create Services shortcut on the desktop
+  community.windows.win_shortcut:
+    src: "%windir%\\system32\\services.msc"
+    dest: C:\Users\{{ user_adm_antor }}\Desktop\Services.lnk
+    icon: "%windir%\\system32\\filemgmt.dll,0"
 
 # - name: Download 7z from FTP
 #   win_shell:

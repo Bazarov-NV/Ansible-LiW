@@ -23,10 +23,18 @@
   ansible.windows.win_shell: Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
   register: reboot_required_result
 
+- name: Create IIS shortcut on the desktop
+  community.windows.win_shortcut:
+    src: "%windir%\\system32\\inetsrv\\InetMgr.exe"
+    dest: C:\Users\{{ user_adm_antor }}\Desktop\Internet Information Services (IIS) Manager.lnk
+    icon: "%windir%\\system32\\inetsrv\\InetMgr.exe,0"
+
 - name: Reboot if pending
   ansible.windows.win_reboot:
     msg: "Rebooting for pending update"
   when: reboot_pending_result.stdout == "True\r\n" or reboot_required_result.stdout == "True\r\n"
+
+
 
 # Setup ANTOR LiW site to IIS
 
@@ -34,6 +42,13 @@
   microsoft.iis.website:
     name: "Default Web Site" # Replace with your site name
     state: stopped
+
+- name: Ensure 'DefaultAppPool' is stopped
+  microsoft.iis.web_app_pool:
+    name: "DefaultAppPool"
+    state: stopped
+    attributes:
+      autoStart: true    
 
 - name: Create directories inetpub
   win_file:
@@ -75,18 +90,51 @@
     application_pool: "{{ antor_ent_site }}"
     bindings:
       set:
-        - ip: 127.0.0.1
-          port: 8081
-          hostname: my-website.com
-        - ip: 127.0.0.2
-          port: 8082
-          hostname: my-website.net
-          protocol: https
-          use_sni: true
-          use_ccs: false
-          certificate_hash: 5409124040FA1C8FA74939BDA2EF8FD5975BD25B
-          certificate_store_name: MY
+        - port: {{ http_port_ae_site }}
+          protocol: http
+        - port: {{ https_port1_ae_site }}
+          protocol: https                  
+        - port: {{ https_port1_ae_site }}
+          protocol: https             
 
+- name: add firewall rule ANTOR Enterprise site
+  win_firewall_rule:
+     name: "ANTOR Enterprise Port"
+     direction: in
+     action: Allow
+     protocol: TCP
+     localport: "{{ iis_ae_site_port_range }}"
+     state: present
+     enabled: yes
+     profile: # <-- Changed from Any
+       - Domain
+       - Private
+       - Public
+
+
+- name: Create certificates directory if it doesn't exist
+  ansible.windows.win_file:
+    path: "{{ cert_folder }}"
+    state: directory
+
+- name: Download certificates from FTP
+  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ cert_7z_file }} -O "{{ distr_folder_host }}\\{{ sert_7z_file }}"
+
+- name: Extract sertificates 7z to ANTOR folder
+  win_shell: 7z x "{{ distr_folder_host }}\\{{ cert_7z_file }}" -o"{{ cert_folder }}" -aoa   
+
+- name: Import antor_root_authotity by IIS
+  ansible.windows.win_certificate_store:
+    path: "{{ cert_folder }}\\{{ antor_root_authotity }}"
+    file_type: pkcs12
+    password: andrewgor
+    store_name: Root
+    store_location: LocalMachine
+    key_storage: machine
+    state: present
+  become: true
+  become_method: runas
+  become_user: SYSTEM
 
 - name: Add ISAPI CGI TMService rule TM
   win_shell: appcmd set config /section:isapiCgiRestriction /+"[path='{{ iis_folder_tm }}\TMService.exe',description='TMService',allowed='True']"
