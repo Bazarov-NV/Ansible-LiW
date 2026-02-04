@@ -1,0 +1,67 @@
+---
+- name: Prompt for a specific confirmation
+  ansible.builtin.pause:
+    prompt: "Установить утилиты для адмиинистрирования? (да/нет): "
+    echo: yes
+  register: user_confirmation_input
+
+- name: Fail if user did not confirm correctly
+  ansible.builtin.fail:
+    msg: "Установка утилит пропущена."
+  when: user_confirmation_input.user_input | lower != 'да'
+
+- name: Create tools directory if it doesn't exist
+  ansible.windows.win_file:
+    path: "{{ antor_tools_folder }}"
+    state: directory
+
+- name: set rights tools folder
+  win_acl:
+    path: "{{ antor_tools_folder }}"
+    user: "{{ user_antor }}"
+    rights: FullControl
+    state: present
+    type: allow
+
+- name: Download utils distr from FTP
+  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ tools_file_7z }} -O "{{ distr_folder }}\\{{ tools_file_7z }}"
+
+- name: Extract all utils 7z to tools folder
+  win_shell: 7z x "{{ antor_tools_folder }}\\{{ tools_file_7z }}" -o"{{ antor_tools_folder }}" -aoa
+
+- name: Extract utils
+  win_shell: 7z x "{{ antor_tools_folder }}\\{{ item.zip_name }}" -o"{{ item.path }}" -aoa
+  loop: "{{ tools_list }}"
+  when: item.zip_name | length > 0
+
+- name: Install utils
+  win_shell: "{{ item.install_script }}"
+  loop: "{{ tools_list }}"
+  when: item.install
+
+- name: Create an application shortcut on the desktop
+  community.windows.win_shortcut:
+    src: "{{ item.path }}\\{{ item.exe_name }}"
+    dest: C:\Users\{{ user_adm_antor }}\Desktop\{{ item.tool_name }}.lnk
+    icon: "{{ item.icon_path}},0"
+  loop: "{{ tools_list }}"
+  when: item.shortcut
+
+- name: Create scheduled task "Background info"
+  community.windows.win_scheduled_task:
+    name: Background info
+    description: Background info at startup
+    hidden: true
+    actions:
+      - path: "{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
+        arguments: "{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0"
+    triggers:
+      - type: boot
+    username: SYSTEM
+    state: present
+    enabled: yes
+    
+- name: Install Google Chrome via Chocolatey
+  ansible.windows.win_chocolatey:
+    name: googlechrome
+    state: present

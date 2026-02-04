@@ -1,0 +1,34 @@
+---
+iis_additional_features:
+  - Web-Server
+  - Web-WebServer
+  - Web-Common-Http
+  - Web-Default-Doc
+  - Web-Dir-Browsing
+  - Web-Http-Errors
+  - Web-Static-Content
+  - Web-DAV-Publishing
+  - Web-Health
+  - Web-Http-Logging
+  - Web-Performance
+  - Web-Stat-Compression
+  - Web-Security
+  - Web-Filtering
+  - Web-Basic-Auth
+  - Web-Url-Auth
+  - Web-App-Dev
+  - Web-Net-Ext45
+  - Web-Asp-Net45
+  - Web-ISAPI-Ext
+  - Web-ISAPI-Filter
+  - Web-Ftp-Server
+  - Web-Ftp-Service
+  - Web-Mgmt-Tools
+  - Web-Mgmt-Console
+
+iis_folder: "C:\\inetpub\\ANTOR Enterprise"
+antor_ent_site: "ANTOR Enterprise"
+
+http_port_ae_site: "8090"
+https_port1_ae_site: "8091"
+https_port2_ae_site: "8092"

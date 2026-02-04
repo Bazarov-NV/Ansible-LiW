@@ -1,0 +1,26 @@
+description: "Server for tsting (external)"
+environment: test
+ip_address: 195.19.176.117
+
+pg_version: "16"
+pg_port: 5432
+pg_db: "lm_server"
+pg_user: "postgres"
+pg_pwd: "AcLfl7g9XW"
+pg_host: "localhost"
+
+
+antor_folder: "C:\\LMSERVER"
+lmserver_port: "8080"
+
+maps:
+  map1:
+    db_name: "map_moscow"
+    proj_id: 1
+    desc_ru: "Карта Москвы и Московской области."
+    file_backup: "map_moscow.sql"
+  map2:
+    db_name: "map_sfo_sever_kavkaz"
+    proj_id: 15
+    desc_ru: "Карта ЮФО и Северный Кавказ"
+    file_backup: "map_sfo_sever_kavkaz.sql"

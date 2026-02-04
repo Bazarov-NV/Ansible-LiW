@@ -1,0 +1,12 @@
+description: "Server for testing (internal)"
+
+# Папка на клиентском сервере для установки
+antor_root_folder: "C:\\ANTOR"
+
+user_antor: "ANTOR-ENTERPRISE"
+passw_user_antor: "BfIFq2Rm7g"
+user_adm_antor: "antor_admin"
+pasw_adm_antor: "OAsJj47vwr"
+
+# Диапозон портов для телематики
+tele_port_range: "2238-2250"
