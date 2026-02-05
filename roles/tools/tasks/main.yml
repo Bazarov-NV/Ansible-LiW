@@ -1,36 +1,25 @@
 ---
-- name: Prompt for a specific confirmation
-  ansible.builtin.pause:
-    prompt: "Установить утилиты для адмиинистрирования? (да/нет): "
-    echo: yes
-  register: user_confirmation_input
-
-- name: Fail if user did not confirm correctly
-  ansible.builtin.fail:
-    msg: "Установка утилит пропущена."
-  when: user_confirmation_input.user_input | lower != 'да'
-
 - name: Create tools directory if it doesn't exist
   ansible.windows.win_file:
-    path: "{{ antor_tools_folder }}"
+    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}"
     state: directory
 
 - name: set rights tools folder
   win_acl:
-    path: "{{ antor_tools_folder }}"
+    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}"
     user: "{{ user_antor }}"
     rights: FullControl
     state: present
     type: allow
 
 - name: Download utils distr from FTP
-  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ tools_file_7z }} -O "{{ distr_folder }}\\{{ tools_file_7z }}"
+  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ tools_file_7z }} -O "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ tools_file_7z }}"
 
 - name: Extract all utils 7z to tools folder
-  win_shell: 7z x "{{ antor_tools_folder }}\\{{ tools_file_7z }}" -o"{{ antor_tools_folder }}" -aoa
+  win_shell: 7z x "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ tools_file_7z }}" -o"{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}" -aoa
 
 - name: Extract utils
-  win_shell: 7z x "{{ antor_tools_folder }}\\{{ item.zip_name }}" -o"{{ item.path }}" -aoa
+  win_shell: 7z x "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ item.zip_name }}" -o"{{ item.path }}" -aoa
   loop: "{{ tools_list }}"
   when: item.zip_name | length > 0
 
@@ -53,15 +42,15 @@
     description: Background info at startup
     hidden: true
     actions:
-      - path: "{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
-        arguments: "{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0"
+      - path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
+        arguments: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0 /nolicprompt"
     triggers:
       - type: boot
     username: SYSTEM
     state: present
     enabled: yes
-    
+
 - name: Install Google Chrome via Chocolatey
-  ansible.windows.win_chocolatey:
+  win_chocolatey:
     name: googlechrome
     state: present

@@ -1,7 +1,8 @@
 description: "Server for testing (internal)"
 
 # Папка на клиентском сервере для установки
-antor_root_folder: "C:\\ANTOR"
+antor_root_folder: "ANTOR"
+disk_install: "C:"
 
 user_antor: "ANTOR-ENTERPRISE"
 passw_user_antor: "BfIFq2Rm7g"

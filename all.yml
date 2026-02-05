@@ -1,25 +1,53 @@
 ---
 - name: Prepare the VM on the test server
   hosts: ubuntu_host
+  gather_facts: no
   vars:
     # Имя виртуалки для теста
     vm_name: win2k19-liw-test
     # Имя snapshot для отката виртуалки в исходное состояние
     vm_snapshot: snapshot1
+ 
   tasks:
     - name: Prompt for revert VM to source snpashot
       ansible.builtin.pause:
-        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет):"
-        echo: true
+        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет):"       
       register: user_confirmation_vm
+    # - name: debug 
+    #   debug:
+    #     msg: "{{ user_confirmation_vm.user_input }}"
+
     - name: Revert VM to snapshot and start
       shell: |
-        virsh snapshot-revert {{ vm_name }} {{ vm_snapshot }} --force
+        virsh snapshot-revert {{ vm_name }} {{ vm_snapshot }} --running --force
       become: true
-      when: user_confirmation_vm | lower = 'да'
+      when: user_confirmation_vm.user_input | lower in yes_answer
 
 - name: Install LiW
-  hosts: liwws2019
-  roles:
-    - preconfig
-    - tools
+  hosts: liwws2019  
+  gather_facts: no 
+
+  tasks:
+    - name: Prompt for tools install
+      pause:
+        prompt: "Выполнить подготовку сервреа? (да/нет): "        
+      register: user_confirmation_input1 
+
+    - name: "Подготовка сервера" 
+      include_role:
+        name: preconfig            
+      when: user_confirmation_input1.user_input | lower in yes_answer
+
+    - name: Prompt for tools install
+      pause:
+        prompt: "Установить утилиты для адмиинистрирования? (да/нет): "        
+      register: user_confirmation_input1    
+    - name: "Установка утилит"
+      include_role: 
+        name: tools    
+      when: user_confirmation_input1.user_input | lower in yes_answer
+
+    - name: debug2 
+      debug:
+        msg: "После ролей!"
+

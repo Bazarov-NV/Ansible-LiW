@@ -5,16 +5,17 @@ repo_utils_folder: "{{ repo_folder }}\\Utils"
 repo_utils_folder_ext: "{{ repo_folder_ext }}\\Utils"
 # Имя архива со всеми админскими утилиатми
 tools_file_7z: "Utils.7z"
+antor_tools_folder: "Utils"
 # Список админских утилит с параметрами для установки
 tools_list:
   - tool_name: "Background info"
     distr_path: ""
     zip_name: "bginfo.zip"
     exe_name: "Bginfo64.exe"
-    path: "{{ antor_tools_folder }}\\bginfo"
+    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo"
     install: false
     install_script: |
-      $action = New-ScheduledTaskAction -Execute "C:\ANTOR\Utils\bginfo\bginfo64.exe" -Argument "C:\ANTOR\Utils\bginfo\bg_config.bgi /timer:0"
+      $action = New-ScheduledTaskAction -Execute "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bginfo64.exe" -Argument "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0"
       $trigger = New-ScheduledTaskTrigger -AtStartup
       $settings = New-ScheduledTaskSettingsSet -Hidden
       Register-ScheduledTask -TaskName "Background info" -Action $action -Trigger $trigger -Settings $settings
@@ -24,34 +25,28 @@ tools_list:
     distr_path: ""
     zip_name: "cports.zip"
     exe_name: "cports.exe"
-    path: "{{ antor_tools_folder }}\\cports"
+    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\cports"
     install: true
-    install_script: Set-Content -Path "{{ antor_tools_folder }}\\cports\\cports_filter.txt" -Value "include:local:tcp:{{ tele_port_range }}"
+    install_script: Set-Content -Path "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\cports\\cports_filter.txt" -Value "include:local:tcp:{{ tele_port_range }}"
     shortcut: true
-    icon_path: "{{ antor_tools_folder }}\\cports\\cports.exe"
+    icon_path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\cports\\cports.exe"
   - tool_name: "totalcmd"
     distr_path: ""
     zip_name: "totalcmd.zip"
     exe_name: "totalcmd.exe"
-    path: "{{ antor_tools_folder }}\\totalcmd"
+    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\totalcmd"
     install: false
     install_script: ""
     shortcut: true
-    icon_path: "{{ antor_tools_folder }}\\totalcmd\\totalcmd.exe"
+    icon_path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\totalcmd\\totalcmd.exe"
   - tool_name: "far"
-    distr_path: "{{ antor_tools_folder }}\\Far30b6446.x64.msi"
+    distr_path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\Far30b6446.x64.msi"
     zip_name: ""
     exe_name: "Far.exe"
-    path: "{{ antor_tools_folder }}\\FAR"
+    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\FAR"
     install: true
-    install_script: "msiexec /i '{{ antor_tools_folder }}\\Far30b6446.x64.msi' /qn /norestart INSTALLDIR='{{ antor_tools_folder }}\\FAR'"
+    install_script: "msiexec /i '{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\Far30b6446.x64.msi' /qn /norestart INSTALLDIR='{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\FAR'"
     shortcut: true
-    icon_path: "{{ antor_tools_folder }}\\FAR\\Far.exe"
+    icon_path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\FAR\\Far.exe"
 
-antor_tools_folder: "{{ antor_root_folder }}\\Utils"
-# 7-Zip download URL (official site)
-seven_zip_url: "https://www.7-zip.org/a/7z2201-x64.msi"
-# Local path to save the installer
-installer_7z_path: "{{ antor_tools_folder }}\\7z-installer.msi"
-# Install directory
-install_7z_dir: "C:\\Program Files\\7-Zip\\"
+

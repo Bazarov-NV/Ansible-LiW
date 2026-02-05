@@ -136,15 +136,7 @@
   become_method: runas
   become_user: SYSTEM
 
-- name: Add ISAPI CGI TMService rule TM
-  win_shell: appcmd set config /section:isapiCgiRestriction /+"[path='{{ iis_folder_tm }}\TMService.exe',description='TMService',allowed='True']"
-  register: r1
-  failed_when: "'Cannot add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
 
-- name: Add ISAPI CGI TMUpdate rule TM
-  win_shell: appcmd set config /section:isapiCgiRestriction /+"[path='{{ iis_folder_tm }}\TMUpdate.exe',description='TMUpdate',allowed='True']"
-  register: r2
-  failed_when: "'Cannot add duplicate collection' not in r1.stdout and 'ERROR' in r2.stdout"
 
 - name: Allow override Handlers section site TM
   win_shell: appcmd set config "TM" /section:system.webServer/handlers /overrideMode:Allow /commit:apphost

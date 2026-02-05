@@ -6,8 +6,8 @@
 - name: Reboot if pending
   ansible.windows.win_reboot:
     msg: "Rebooting for pending update"
-  when: reboot_pending_result.stdout == "True\r\n" or reboot_required_result.stdout == "True\r\n"
-  
+  when: reboot_required_result.stdout == "True\r\n"
+
 - name: Check UAC status
   ansible.windows.win_reg_stat:
     path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
@@ -29,16 +29,13 @@
     bootstrap_script: "https://community.chocolatey.org/install.ps1"
     version: "1.4.3"
     state: present
-
-- name: Create ANTOR root directory if it doesn't exist
-  ansible.windows.win_file:
-    path: "{{ antor_root_folder }}"
+- name: Create ANTOR directories if it doesn't exist
+  win_file:
+    path: "{{ item }}"
     state: directory
-
-- name: Create ANTOR distr directory if it doesn't exist
-  ansible.windows.win_file:
-    path: "{{ distr_folder_host }}"
-    state: directory
+  loop:
+    - "{{ disk_install }}\\{{ antor_root_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}"
 
 - name: Create ANTOR user
   ansible.windows.win_user:
@@ -50,7 +47,7 @@
 
 - name: set rights root folder
   win_acl:
-    path: "{{ antor_root_folder }}"
+    path: "{{ disk_install }}\\{{ antor_root_folder }}"
     user: "{{ user_antor }}"
     rights: FullControl
     state: present
