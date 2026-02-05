@@ -11,7 +11,7 @@
   tasks:
     - name: Prompt for revert VM to source snpashot
       ansible.builtin.pause:
-        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет):"       
+        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет)"       
       register: user_confirmation_vm
     # - name: debug 
     #   debug:
@@ -30,7 +30,7 @@
   tasks:
     - name: Prompt for tools install
       pause:
-        prompt: "Выполнить подготовку сервреа? (да/нет): "        
+        prompt: "Выполнить подготовку сервера? (да/нет)"        
       register: user_confirmation_input1 
 
     - name: "Подготовка сервера" 
@@ -40,7 +40,7 @@
 
     - name: Prompt for tools install
       pause:
-        prompt: "Установить утилиты для адмиинистрирования? (да/нет): "        
+        prompt: "Установить утилиты для администрирования сервера? (да/нет)"        
       register: user_confirmation_input1    
     - name: "Установка утилит"
       include_role: 

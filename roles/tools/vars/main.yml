@@ -14,11 +14,7 @@ tools_list:
     exe_name: "Bginfo64.exe"
     path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo"
     install: false
-    install_script: |
-      $action = New-ScheduledTaskAction -Execute "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bginfo64.exe" -Argument "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0"
-      $trigger = New-ScheduledTaskTrigger -AtStartup
-      $settings = New-ScheduledTaskSettingsSet -Hidden
-      Register-ScheduledTask -TaskName "Background info" -Action $action -Trigger $trigger -Settings $settings
+    install_script: ""
     shortcut: false
     icon_path: ""
   - tool_name: "cports"

@@ -46,7 +46,7 @@
         arguments: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0 /nolicprompt"
     triggers:
       - type: boot
-    username: SYSTEM
+    username: {{ user_adm_antor }}
     state: present
     enabled: yes
 
