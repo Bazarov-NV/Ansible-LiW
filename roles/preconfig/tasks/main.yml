@@ -64,6 +64,9 @@
     dest: C:\Users\{{ user_adm_antor }}\Desktop\Services.lnk
     icon: "%windir%\\system32\\filemgmt.dll,0"
 
+- name: Reboot server preconfig
+  ansible.windows.win_reboot:
+
 # - name: Download 7z from FTP
 #   win_shell:
 #     wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/7z2501.exe -O "{{ antor_tools_folder }}\\7z2501.exe"

@@ -40,13 +40,18 @@
   community.windows.win_scheduled_task:
     name: Background info
     description: Background info at startup
+    display_name: Background info
     hidden: true
     actions:
       - path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
         arguments: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0 /nolicprompt"
     triggers:
-      - type: boot
-    username: {{ user_adm_antor }}
+      - type: logon
+      - user_id: "{{ user_adm_antor }}"  
+    author: "{{ user_adm_antor }}"    
+    username: "{{ user_adm_antor }}"
+    password: "{{ pasw_adm_antor }}"
+    logon_type: interactive_token
     state: present
     enabled: yes
 

@@ -1,0 +1,24 @@
+---
+- name: test
+  hosts: liwws2019  
+  gather_facts: no 
+
+  tasks:
+    - name: Create scheduled task "Background info"
+      community.windows.win_scheduled_task:
+        name: Background info
+        description: Background info at startup
+        display_name: Background info
+        hidden: true
+        actions:
+          - path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
+            arguments: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0 /nolicprompt"
+        trigger:
+          - type: logon
+          - user_id: "{{ user_adm_antor }}"  
+        author: "{{ user_adm_antor }}"    
+        username: "{{ user_adm_antor }}"
+        password: "{{ pasw_adm_antor }}"
+        logon_type: interactive_token
+        state: present
+        enabled: yes
