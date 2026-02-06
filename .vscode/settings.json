@@ -1,0 +1,5 @@
+{
+  "ansible.mcpServer.enabled": true,
+  "ansible.python.interpreterPath": "/bin/python3",
+  "ansible.ansible.useFullyQualifiedCollectionNames": false
+}

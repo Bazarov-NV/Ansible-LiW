@@ -1,0 +1,6 @@
+---
+antor_ent_site: "ANTOR Enterprise"
+
+cert_7z_file: "Certificates.7z"
+cert_folder: "Certificates"
+antor_root_authotity: "ANTOR Enterprise Root Authority.pfx"

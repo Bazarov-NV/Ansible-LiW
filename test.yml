@@ -13,9 +13,10 @@
         actions:
           - path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
             arguments: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0 /nolicprompt"
-        trigger:
+        triggers:
           - type: logon
-          - user_id: "{{ user_adm_antor }}"  
+          - type: boot
+            user_id: "{{ user_adm_antor }}"  
         author: "{{ user_adm_antor }}"    
         username: "{{ user_adm_antor }}"
         password: "{{ pasw_adm_antor }}"

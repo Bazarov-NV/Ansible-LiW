@@ -29,4 +29,6 @@
   # Имя архива со всеми админскими утилиатми
   tools_file_7z: "Utils.7z"
   antor_tools_folder: "Utils"
+  
+  iis_folder: "C:\\inetpub\\ANTOR Enterprise"
 

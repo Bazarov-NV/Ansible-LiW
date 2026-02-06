@@ -34,8 +34,6 @@
     msg: "Rebooting for pending update"
   when: reboot_pending_result.stdout == "True\r\n" or reboot_required_result.stdout == "True\r\n"
 
-
-
 # Setup ANTOR LiW site to IIS
 
 - name: Stop the default IIS web site
@@ -48,7 +46,7 @@
     name: "DefaultAppPool"
     state: stopped
     attributes:
-      autoStart: true    
+      autoStart: true
 
 - name: Create directories inetpub
   win_file:
@@ -63,133 +61,3 @@
     state: present
     type: allow
 
-#Configure IIS server
-
-# - name: Add pool TM
-#   win_shell: appcmd add apppool /name:{{ antor_ent_site }} /managedRuntimeVersion:"v4.0" /managedPipelineMode:"Integrated"
-#   register: add_pool_result
-#   failed_when: "'Failed to add duplicate collection element' not in add_pool_result.stdout and 'ERROR' in add_pool_result.stdout"
-- name: Create a new application pool in 'Started' state
-  microsoft.iis.web_app_pool:
-    name: "{{ antor_ent_site }}"
-    state: started
-
-# - name: Add site TM
-#   win_shell: appcmd add site /name:{{ antor_ent_site }} /bindings:"http/*:80:" /physicalPath:"{{ iis_folder_tm }}"
-#   register: add_site_result
-#   failed_when: "'Failed to add duplicate collection element' not in add_site_result.stdout and 'ERROR' in add_site_result.stdout"
-
-# - name: Add site TM to pool TM
-#   win_shell: appcmd set app "TM/" /applicationPool:"TM"
-- name: Create a new site "ANTOR ENTERPRISE"
-  microsoft.iis.website:
-    name: "{{ antor_ent_site }}"
-    site_id: 2
-    state: started
-    physical_path: "{{ iis_folder }}"
-    application_pool: "{{ antor_ent_site }}"
-    bindings:
-      set:
-        - port: {{ http_port_ae_site }}
-          protocol: http
-        - port: {{ https_port1_ae_site }}
-          protocol: https                  
-        - port: {{ https_port1_ae_site }}
-          protocol: https             
-
-- name: add firewall rule ANTOR Enterprise site
-  win_firewall_rule:
-     name: "ANTOR Enterprise Port"
-     direction: in
-     action: Allow
-     protocol: TCP
-     localport: "{{ iis_ae_site_port_range }}"
-     state: present
-     enabled: yes
-     profile: # <-- Changed from Any
-       - Domain
-       - Private
-       - Public
-
-
-- name: Create certificates directory if it doesn't exist
-  ansible.windows.win_file:
-    path: "{{ cert_folder }}"
-    state: directory
-
-- name: Download certificates from FTP
-  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ cert_7z_file }} -O "{{ distr_folder_host }}\\{{ sert_7z_file }}"
-
-- name: Extract sertificates 7z to ANTOR folder
-  win_shell: 7z x "{{ distr_folder_host }}\\{{ cert_7z_file }}" -o"{{ cert_folder }}" -aoa   
-
-- name: Import antor_root_authotity by IIS
-  ansible.windows.win_certificate_store:
-    path: "{{ cert_folder }}\\{{ antor_root_authotity }}"
-    file_type: pkcs12
-    password: andrewgor
-    store_name: Root
-    store_location: LocalMachine
-    key_storage: machine
-    state: present
-  become: true
-  become_method: runas
-  become_user: SYSTEM
-
-
-
-- name: Allow override Handlers section site TM
-  win_shell: appcmd set config "TM" /section:system.webServer/handlers /overrideMode:Allow /commit:apphost
-
-- name: Set permission to Handlers
-  win_shell: appcmd set config "TM/" /section:system.webServer/handlers /accessPolicy:Read,Script,Execute
-
-- name: Set user to identity AppPool IIS
-  win_shell: appcmd set apppool "TM" /processModel.identityType:SpecificUser /processModel.userName:{{ antor_win_user }} /processModel.password:"{{ antor_win_user_pwd }}"
-
-- name: IIS set site CGI user
-  win_shell: appcmd set config "TM" /section:system.webServer/cgi /createProcessAsUser:"True" /commit:apphost
-- name: IIS set anonymousAuthentication
-  win_shell: appcmd set config "TM" /section:system.webServer/security/authentication/anonymousAuthentication /username:"" /enabled:True /commit:apphost
-
-#Add HTTPS binding to site
-
-- name: Add https binding
-  win_shell: appcmd set site TM /+bindings."[protocol='https',bindingInformation='*:{{ tm_https_port }}:']"
-  when: tm_https_need
-  register: is_https
-  failed_when: "'Cannot add duplicate collection' not in is_https.stdout and 'ERROR' in is_https.stdout"
-
-- name: Get ssl_cert_thumbprint
-  win_shell: |
-    $v1 = Get-ChildItem -Path Cert:\LocalMachine\My | Select-Object -First 1
-    write-host $v1.thumbprint
-  register: new_thumbprint
-  when: tm_https_need and ssl_cert_thumbprint == ''
-
-- name: Set a new variable from the command's stdout
-  ansible.builtin.set_fact:
-    ssl_cert_thumbprint: "{{new_thumbprint.stdout|trim}}"
-  when: tm_https_need and  new_thumbprint.stdout != ''
-
-- name: Add SSL sert
-  win_shell: netsh http add sslcert ipport="0.0.0.0:443" certhash="{{ssl_cert_thumbprint|trim}}" certstorename=MY appid='{ebc8f0fe-1628-453e-a611-a24494cc277d}'
-  register: is_add_ssl
-  when: tm_https_need and ssl_cert_thumbprint != '' and not is_https.failed
-  ignore_errors: true
-
-- name: Set SSL require and accept user certs
-  win_shell: appcmd set config "TM/" /section:system.webServer/security/access /sslFlags:"Ssl,SslNegotiateCert" /commit:apphost
-  when: tm_https_need and not is_https.failed and not is_add_ssl.failed
-  ignore_errors: true
-
-#Restart site & app pool
-
-- name: Recycle AppPool
-  win_shell: appcmd recycle apppool "TM"
-
-- name: Site stop
-  win_shell: appcmd stop site /site.name:"TM"
-
-- name: Site start
-  win_shell: appcmd start site /site.name:"TM"

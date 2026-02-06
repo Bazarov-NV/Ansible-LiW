@@ -1,19 +1,19 @@
 ---
 - name: Prepare the VM on the test server
   hosts: ubuntu_host
-  gather_facts: no
+  gather_facts: false
   vars:
     # Имя виртуалки для теста
     vm_name: win2k19-liw-test
     # Имя snapshot для отката виртуалки в исходное состояние
     vm_snapshot: snapshot1
- 
+
   tasks:
     - name: Prompt for revert VM to source snpashot
       ansible.builtin.pause:
-        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет)"       
+        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет)"
       register: user_confirmation_vm
-    # - name: debug 
+    # - name: debug
     #   debug:
     #     msg: "{{ user_confirmation_vm.user_input }}"
 
@@ -24,30 +24,46 @@
       when: user_confirmation_vm.user_input | lower in yes_answer
 
 - name: Install LiW
-  hosts: liwws2019  
-  gather_facts: no 
+  hosts: liwws2019
+  gather_facts: false
 
   tasks:
-    - name: Prompt for tools install
+    - name: Prompt for preconfig
       pause:
-        prompt: "Выполнить подготовку сервера? (да/нет)"        
-      register: user_confirmation_input1 
+        prompt: "Выполнить подготовку сервера? (да/нет)"
+      register: user_confirmation_input1
 
-    - name: "Подготовка сервера" 
+    - name: "Подготовка сервера"
       include_role:
-        name: preconfig            
+        name: preconfig
       when: user_confirmation_input1.user_input | lower in yes_answer
 
     - name: Prompt for tools install
       pause:
-        prompt: "Установить утилиты для администрирования сервера? (да/нет)"        
-      register: user_confirmation_input1    
+        prompt: "Установить утилиты для администрирования сервера? (да/нет)"
+      register: user_confirmation_input1
     - name: "Установка утилит"
-      include_role: 
-        name: tools    
+      include_role:
+        name: tools
       when: user_confirmation_input1.user_input | lower in yes_answer
 
-    - name: debug2 
+    - name: Prompt for iis install
+      pause:
+        prompt: "Установить IIS? (да/нет)"
+      register: user_confirmation_input1
+    - name: "Установка IIS"
+      include_role:
+        name: iis
+      when: user_confirmation_input1.user_input | lower in yes_answer
+    - name: Prompt for ae-site install
+      pause:
+        prompt: "Установить AMTOR Enterprise site? (да/нет)"
+      register: user_confirmation_input1
+    - name: "Установка сайта MTOR Enterprise"
+      include_role:
+        name: iis_ent_site
+      when: user_confirmation_input1.user_input | lower in yes_answer
+
+    - name: debug2
       debug:
         msg: "После ролей!"
-

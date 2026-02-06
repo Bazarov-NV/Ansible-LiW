@@ -14,6 +14,11 @@
     name: EnableLUA
   register: uac_check
 
+# - name: debug2
+#   debug:
+#     msg: "{{ uac_check }}"
+
+
 - name: Temporarily disable UAC
   win_regedit:
     path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
@@ -21,7 +26,7 @@
     data: 0
     type: dword
   register: dis_uac
-  when: uac_check
+  when: uac_check.value == 1
 
 - name: Ensure Chocolatey is installed
   win_chocolatey:
