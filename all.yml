@@ -55,15 +55,28 @@
       include_role:
         name: iis
       when: user_confirmation_input1.user_input | lower in yes_answer
+    
     - name: Prompt for ae-site install
       pause:
         prompt: "Установить AMTOR Enterprise site? (да/нет)"
-      register: user_confirmation_input1
-    - name: "Установка сайта MTOR Enterprise"
+      register: user_confirmation_input1      
+    
+    - name: "Установка сайта ANTOR Enterprise"
       include_role:
         name: iis_ent_site
-      when: user_confirmation_input1.user_input | lower in yes_answer
+      when: user_confirmation_input1.user_input | lower in yes_answer              
+      
 
-    - name: debug2
-      debug:
-        msg: "После ролей!"
+    - name: Prompt for FTP install
+      pause:
+        prompt: "Установить AMTOR FTP? (да/нет)"
+      register: user_confirmation_input1
+      tags: test
+    
+    - name: "Установка сайта ANTOR FTP"
+      include_role:
+        name: iis_ftp
+      when: user_confirmation_input1.user_input | lower in yes_answer              
+      tags: test
+
+    

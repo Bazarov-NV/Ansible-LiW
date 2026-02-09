@@ -7,11 +7,17 @@ disk_install: "C:"
 user_antor: "ANTOR-ENTERPRISE"
 passw_user_antor: "BfIFq2Rm7g"
 user_adm_antor: "antor_admin"
-pasw_adm_antor: "1q23456&*"
+passw_adm_antor: "1q23456&*"
 
 # Диапозон портов для телематики
 tele_port_range: "2238-2250"
+
 iis_ae_site_port_range: "8093-8095"
 http_port_ae_site: "8093"
 https_port1_ae_site: "8094"
 https_port2_ae_site: "8095"
+
+ftp_path: "C:\\inetpub\\"
+ftp_port_range1: "6000"
+ftp_port_range2: "7000"
+ftp_port: "21"

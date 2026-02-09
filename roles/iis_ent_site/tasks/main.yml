@@ -1,22 +1,15 @@
 ---
-#Configure IIS server
-
-# - name: Add pool TM
-#   win_shell: appcmd add apppool /name:{{ antor_ent_site }} /managedRuntimeVersion:"v4.0" /managedPipelineMode:"Integrated"
-#   register: add_pool_result
-#   failed_when: "'Failed to add duplicate collection element' not in add_pool_result.stdout and 'ERROR' in add_pool_result.stdout"
+#Add ANTOR Enterprise site
 - name: Create a new application pool in 'Started' state
   microsoft.iis.web_app_pool:
     name: "{{ antor_ent_site }}"
-    state: started
+    attributes:
+      processModel.identityType: SpecificUser
+      processModel.userName: "{{ user_antor }}"
+      processModel.password: "{{ passw_user_antor }}"
+      processModel.loadUserProfile: true
+    state: started    
 
-# - name: Add site TM
-#   win_shell: appcmd add site /name:{{ antor_ent_site }} /bindings:"http/*:80:" /physicalPath:"{{ iis_folder_tm }}"
-#   register: add_site_result
-#   failed_when: "'Failed to add duplicate collection element' not in add_site_result.stdout and 'ERROR' in add_site_result.stdout"
-
-# - name: Add site TM to pool TM
-#   win_shell: appcmd set app "TM/" /applicationPool:"TM"
 - name: Create certificates directory if it doesn't exist
   ansible.windows.win_file:
     path: "{{ cert_folder }}"
@@ -29,7 +22,7 @@
   win_shell: 7z x "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ cert_7z_file }}" -o"{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}" -aoa
 
 - name: Import antor_root_authotity
-  ansible.windows.win_certificate_store:
+  win_certificate_store:
     path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}\\{{ antor_root_authotity_file }}"
     file_type: pkcs12
     password: "{{ root_cert_passw }}"
@@ -43,7 +36,7 @@
   register: cert_import_result
 
 - name: Obtain information 1
-  ansible.windows.win_shell: |   
+  win_shell: |   
     $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
     if ($cert) {
       Write-Output $cert.Thumbprint
@@ -60,7 +53,7 @@
   when: cert_hash_result.stdout_lines[0] == "Certificate not found"
 
 - name: Obtain information 2
-  ansible.windows.win_shell: |   
+  win_shell: |   
     $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "CN=ANTOR Enterprise Server" } | Select-Object -Last 1
     if ($cert) {
       Write-Output $cert.Thumbprint
@@ -86,7 +79,14 @@
          certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
        - port: "{{ https_port2_ae_site }}"
          protocol: https
-         certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
+         certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"  
+
+- name: Behavior site AE
+  win_shell: |
+    Import-Module WebAdministration
+    $site_name = "{{ antor_ent_site }}"
+    Set-ItemProperty IIS:\sites\$site_name -name EnabledProtocols -Value "http, https"
+  
 
 - name: add firewall rule ANTOR Enterprise site
   win_firewall_rule:
@@ -101,32 +101,7 @@
       - Domain
       - Private
       - Public
-
-- name: Create certificates directory if it doesn't exist
-  ansible.windows.win_file:
-    path: "{{ cert_folder }}"
-    state: directory
-
-- name: Download certificates from FTP
-  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ cert_7z_file }} -O "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ sert_7z_file }}"
-
-- name: Extract sertificates 7z to ANTOR folder
-  win_shell: 7z x "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ cert_7z_file }}" -o"{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}" -aoa
-
-- name: Import antor_root_authotity by IIS
-  ansible.windows.win_certificate_store:
-    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}\\{{ antor_root_authotity }}"
-    file_type: pkcs12
-    password: andrewgor
-    store_name: Root
-    store_location: LocalMachine
-    key_storage: machine
-    state: present
-  become: true
-  become_method: runas
-  become_user: SYSTEM
-# - name: Allow override Handlers section site TM
-#   win_shell: appcmd set config "TM" /section:system.webServer/handlers /overrideMode:Allow /commit:apphost
+  tags: test    
 
 # - name: Set permission to Handlers
 #   win_shell: appcmd set config "TM/" /section:system.webServer/handlers /accessPolicy:Read,Script,Execute

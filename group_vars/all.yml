@@ -35,5 +35,8 @@
   cert_name: "ANTOR Enterprise Server"
   cert_subj_name: "CN=ANTOR Enterprise Server"
   antor_root_authotity: "ANTOR Enterprise Root Authority"
+  root_cert_subj_name: "CN=ANTOR Enterprise Root Authority"
   antor_root_authotity_file: "ANTOR Enterprise Root Authority.pfx"
 
+  cert_7z_file: "Certificates.7z"
+  cert_folder: "Certificates"
