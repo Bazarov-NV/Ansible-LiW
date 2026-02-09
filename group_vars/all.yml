@@ -31,4 +31,9 @@
   antor_tools_folder: "Utils"
   
   iis_folder: "C:\\inetpub\\ANTOR Enterprise"
+  root_cert_passw: "andrewgor"
+  cert_name: "ANTOR Enterprise Server"
+  cert_subj_name: "CN=ANTOR Enterprise Server"
+  antor_root_authotity: "ANTOR Enterprise Root Authority"
+  antor_root_authotity_file: "ANTOR Enterprise Root Authority.pfx"
 
