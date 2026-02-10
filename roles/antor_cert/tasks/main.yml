@@ -10,12 +10,12 @@
      }
   register: cert_hash_result
   ignore_errors: true
-  tags: test
+
   
 - name: debug 3
   debug:
     msg: "{{ cert_hash_result.stdout_lines[0] }}"
-  tags: test
+
 
 - name: Create certificates directory if it doesn't exist
   ansible.windows.win_file:
@@ -61,10 +61,10 @@
      }
   register: cert_hash_result2
   ignore_errors: true
-  tags: test
+
 
 - name: Create server certificates
   win_shell: 
     "{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}\\makecert.exe -pe -n '{{ cert_subj_name }}' -ss My -sr LocalMachine -a sha1 -sky exchange -eku 1.3.6.1.5.5.7.3.1 -in '{{ antor_root_authotity }}' -is root -ir LocalMachine -sp 'Microsoft RSA SChannel Cryptographic Provider' -sy 12 '{{ cert_name }}.cer'"
   when: cert_hash_result2.stdout_lines[0] == "Certificate not found"
-  tags: test
+

@@ -11,74 +11,89 @@
     win_file:
       path: "{{ ftp_path }}"
       state: directory
-    tags: test  
+    tags: test
 
-  - name: "Установка сертификатов АНТОР"
+  - name: Установка сертификатов АНТОР
     include_role:
         name: antor_cert
-    tags: test    
+    tags: test 
 
-  - name: Create the IIS FTP site and binding
+  - name: Obtain information 2
+    win_shell: |   
+      $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
+      if ($cert) {
+        Write-Output $cert.Thumbprint
+      } else {
+        # Handle case where certificate is not found
+        Write-Error "Certificate not found"
+      }
+    register: cert_hash_result
+    tags: test
+
+  - name: Create the IIS FTP site
     microsoft.iis.website:
-      name: "{{ ftp_site_name }}"
-      state: started
+      name: "{{ ftp_site_name }}"      
       physical_path: "{{ ftp_path }}"
-      bindings:
-        set:
-        - port: "{{  ftp_port }}"
-          protocol: ftp
-          ip_address: "*" # Listen on all IP addresses
-    tags: test  
+      state: started
+    tags: test
 
-  - name: Configure FTP SSL settings
+  - name: Add dd bindings to FTP site
+    win_iis_webbinding:
+      name: "{{ ftp_site_name }}"        
+      port: "{{  ftp_port }}"
+      protocol: ftp
+    tags: test
+
+  - name: Configure FTP
+    win_shell: |
+      Import-Module WebAdministration            
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.accessType -Value "Read, Write"
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.roles -Value ""
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.users -Value "*"  
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.externalIp4Address -Value {{ ext_ip_address_host }}
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.lowDataChannelPort -Value {{ ftp_port_range1 }}
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.highDataChannelPort -Value {{ ftp_port_range2 }}      
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.serverCertHash -Value {{ cert_hash_result.stdout_lines[0] }}
+      Set-WebConfigurationProperty -Filter /system.ftpserver/security/ipsecurity -Name allowUnlisted -PSPath IIS:\ -Location {{ ftp_site_name }} -Value $false
+    tags: test
+
+  - name: Add ip to allow list FTP
     win_shell: |
       Import-Module WebAdministration
-      $ftpSitePath = "IIS:\Sites\{{ ftp_site_name }}"
-      Set-ItemProperty -Path $ftpSitePath -Name sslFlags -Value 1 # 1 means Require SSL
-    tags: test    
+      Add-WebConfiguration -Filter /system.ftpserver/security/ipsecurity -PSPath IIS:\ -Location {{ ftp_site_name }} -Value @{ipAddress="{{ item.ip_address }}";subnetMask="{{ item.subnet_mask }}";allowed=$true}
+    loop: "{{ ftp_allow_list }}"
+    tags: test
 
-  - name: Configure FTP authentication
-    win_shell: |
-      Import-Module WebAdministration
-      Set-ItemProperty "IIS:\\Sites\\{{ ftp_site_name }}" -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
-      Set-ItemProperty "IIS:\\Sites\\{{ ftp_site_name }}" -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
-      Set-ItemProperty "IIS:\\Sites\\{{ ftp_site_name }}" -Name ftpServer.security.authorization.add.accessType -Value "Read, Write"
-      Set-ItemProperty "IIS:\\Sites\\{{ ftp_site_name }}" -Name ftpServer.security.authorization.add.roles -Value ""
-      Set-ItemProperty "IIS:\\Sites\\{{ ftp_site_name }}" -Name ftpServer.security.authorization.add.users -Value "*"  
-    tags: test  
-  
-  - name: Set FTP passive port range
-    win_shell: |
-      Set-ItemProperty "IIS:\\Sites\\{{ ftp_site_name }}" -Name ftpServer.firewallSupport.lowDataChannelPort -Value {{ ftp_port_range1 }}
-      Set-ItemProperty "IIS:\\Sites\\{{ ftp_site_name }}" -Name ftpServer.firewallSupport.highDataChannelPort -Value {{ ftp_port_range2 }}
-    tags: test  
+  # - name: Open firewall ports for FTP
+  #   win_firewall_rule:
+  #     name: "FTP Passive Ports"
+  #     localport: "{{ ftp_port_range1 }} - {{ ftp_port_range2 }}"
+  #     action: allow
+  #     protocol: tcp
+  #     state: present
+  #     direction: in
+  #     enabled: yes
+  #     profile: 
+  #       - Domain
+  #       - Private
+  #       - Public      
+  #   tags: test
 
-  - name: Open firewall ports for FTP
-    win_firewall_rule:
-      name: "FTP Passive Ports"
-      localport: "{{ ftp_port_range1 }} - {{ ftp_port_range2 }}"
-      action: allow
-      protocol: tcp
-      state: present
-      direction: in
-      enabled: yes
-      profile: # <-- Changed from Any
-        - Domain
-        - Private
-        - Public      
-    tags: test  
-
-  - name: Open FTP control port (21)
-    win_firewall_rule:
-      name: "FTP Control Port"
-      localport: "{{ ftp_port }}"
-      action: allow
-      protocol: tcp
-      state: present
-      direction: in      
-      enabled: yes
-      profile: # <-- Changed from Any
-        - Domain
-        - Private
-        - Public      
-    tags: test    
+  # - name: Open FTP control port (21)
+  #   win_firewall_rule:
+  #     name: "FTP Control Port"
+  #     localport: "{{ ftp_port }}"
+  #     action: allow
+  #     protocol: tcp
+  #     state: present
+  #     direction: in      
+  #     enabled: yes
+  #     profile: 
+  #       - Domain
+  #       - Private
+  #       - Public      
+  #   tags: test

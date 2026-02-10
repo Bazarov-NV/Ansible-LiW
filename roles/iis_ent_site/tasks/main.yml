@@ -8,53 +8,15 @@
       processModel.userName: "{{ user_antor }}"
       processModel.password: "{{ passw_user_antor }}"
       processModel.loadUserProfile: true
-    state: started    
+    state: started  
 
-- name: Create certificates directory if it doesn't exist
-  ansible.windows.win_file:
-    path: "{{ cert_folder }}"
-    state: directory
-
-- name: Download certificates from FTP
-  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ cert_7z_file }} -O "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ cert_7z_file }}"
-
-- name: Extract sertificates 7z to ANTOR folder
-  win_shell: 7z x "{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ cert_7z_file }}" -o"{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}" -aoa
-
-- name: Import antor_root_authotity
-  win_certificate_store:
-    path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}\\{{ antor_root_authotity_file }}"
-    file_type: pkcs12
-    password: "{{ root_cert_passw }}"
-    store_name: Root
-    store_location: LocalMachine
-    key_storage: machine
-    state: present
-  become: true
-  become_method: runas
-  become_user: SYSTEM
-  register: cert_import_result
-
-- name: Obtain information 1
-  win_shell: |   
-    $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
-    if ($cert) {
-      Write-Output $cert.Thumbprint
-     } else {
-       # Handle case where certificate is not found
-       Write-Output "Certificate not found"
-     }
-  register: cert_hash_result
-  ignore_errors: true
-
-- name: Create server certificates
-  win_shell: 
-    "{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}\\makecert.exe -pe -n '{{ cert_subj_name }}' -ss My -sr LocalMachine -a sha1 -sky exchange -eku 1.3.6.1.5.5.7.3.1 -in '{{ antor_root_authotity }}' -is root -ir LocalMachine -sp 'Microsoft RSA SChannel Cryptographic Provider' -sy 12 '{{ cert_name }}.cer'"
-  when: cert_hash_result.stdout_lines[0] == "Certificate not found"
+- name: "Установка сертификатов АНТОР"
+  include_role:
+     name: antor_cert
 
 - name: Obtain information 2
   win_shell: |   
-    $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "CN=ANTOR Enterprise Server" } | Select-Object -Last 1
+    $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
     if ($cert) {
       Write-Output $cert.Thumbprint
     } else {
@@ -66,8 +28,6 @@
 - name: Create a new site "ANTOR ENTERPRISE"
   microsoft.iis.website:
     name: "{{ antor_ent_site }}"
-    site_id: 2
-    state: started
     physical_path: "{{ iis_folder }}"
     application_pool: "{{ antor_ent_site }}"
     bindings:

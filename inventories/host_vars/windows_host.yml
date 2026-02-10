@@ -9,6 +9,8 @@ passw_user_antor: "BfIFq2Rm7g"
 user_adm_antor: "antor_admin"
 passw_adm_antor: "1q23456&*"
 
+ext_ip_address_host: "192.168.0.48"
+
 # Диапозон портов для телематики
 tele_port_range: "2238-2250"
 

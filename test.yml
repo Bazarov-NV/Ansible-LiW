@@ -71,3 +71,22 @@
           - port: "{{ https_port2_ae_site }}"
             protocol: https
             certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
+
+
+
+      Import-Module WebAdministration
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.accessType -Value "Read, Write"
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.roles -Value ""
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.users -Value "*"  
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.externalIp4Address -Value {{ ext_ip_address_host }}
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.lowDataChannelPort -Value {{ ftp_port_range1 }}
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.highDataChannelPort -Value {{ ftp_port_range2 }}
+      Set-WebConfigurationProperty -Filter /system.ftpserver/security/ipsecurity -Name allowUnlisted -Value $false -PSPath 'IIS:\' -Location {{ ftp_site_name }}
+      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.serverCertHash -Value {{ cert_hash_result.stdout_lines[0] }}
+
+
+ 

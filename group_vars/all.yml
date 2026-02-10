@@ -16,6 +16,7 @@
   # ftp server c дистрибутивом LiW
   ftp_server_repo: "ftp://ans_distr:4M3nONDY2u@192.168.3.4"
   ftp_folder_repo: "LiW_repo"
+  
 
   # Имя виртуалки для теста
   vm_name: win2k19-liw-test
@@ -40,3 +41,21 @@
 
   cert_7z_file: "Certificates.7z"
   cert_folder: "Certificates"
+
+  ftp_site_name: "ANTOR"
+  ftp_allow_list:
+    - ip_address: "195.239.86.110"
+      subnet_mask: "255.255.255.255"
+    - ip_address: "94.79.3.178"
+      subnet_mask: "255.255.255.255"      
+    - ip_address: "109.95.211.244"
+      subnet_mask: "255.255.255.255"      
+    - ip_address: "79.134.204.150"
+      subnet_mask: "255.255.255.255"      
+    - ip_address: "195.19.176.118"
+      subnet_mask: "255.255.255.255"      
+    - ip_address: "31.28.31.48"
+      subnet_mask: "255.255.255.255" 
+    - ip_address: "192.168.0.0"
+      subnet_mask: "255.255.255.0"      
+
