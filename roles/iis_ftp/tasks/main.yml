@@ -9,9 +9,31 @@
 
   - name: Create physical directory for FTP site
     win_file:
-      path: "{{ ftp_path }}"
+      path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
       state: directory
     tags: test
+
+  - name: Create the IIS FTP site
+    microsoft.iis.website:
+      name: "{{ ftp_site_name }}"      
+      physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
+      state: stopped
+    tags: test
+
+  - name: Add dd bindings to FTP site
+    win_iis_webbinding:
+      name: "{{ ftp_site_name }}"        
+      port: "{{  ftp_port }}"
+      protocol: ftp
+    tags: test
+
+  - name: Start IIS FTP site
+    microsoft.iis.website:
+      name: "{{ ftp_site_name }}"      
+      physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
+      state: started
+    tags: test
+
 
   - name: Установка сертификатов АНТОР
     include_role:
@@ -28,44 +50,44 @@
         Write-Error "Certificate not found"
       }
     register: cert_hash_result
-    tags: test
+    tags: test   
 
-  - name: Create the IIS FTP site
-    microsoft.iis.website:
-      name: "{{ ftp_site_name }}"      
-      physical_path: "{{ ftp_path }}"
-      state: started
-    tags: test
-
-  - name: Add dd bindings to FTP site
-    win_iis_webbinding:
-      name: "{{ ftp_site_name }}"        
-      port: "{{  ftp_port }}"
-      protocol: ftp
+  - name: Configure FTP SSL
+    win_shell: |   
+      Import-Module WebAdministration
+      $sn = '{{ ftp_site_name }}'  
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.serverCertHash -Value {{ cert_hash_result.stdout_lines[0] }}
+    when: cert_hash_result.stdout_lines[0] | length > 0
     tags: test
 
   - name: Configure FTP
-    win_shell: |
-      Import-Module WebAdministration            
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.accessType -Value "Read, Write"
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.roles -Value ""
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.users -Value "*"  
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.externalIp4Address -Value {{ ext_ip_address_host }}
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.lowDataChannelPort -Value {{ ftp_port_range1 }}
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.highDataChannelPort -Value {{ ftp_port_range2 }}      
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.serverCertHash -Value {{ cert_hash_result.stdout_lines[0] }}
-      Set-WebConfigurationProperty -Filter /system.ftpserver/security/ipsecurity -Name allowUnlisted -PSPath IIS:\ -Location {{ ftp_site_name }} -Value $false
+    win_shell: |      
+      Import-Module WebAdministration
+      $sn = '{{ ftp_site_name }}'
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
+      Add-WebConfiguration -Filter /system.ftpServer/security/authorization -Value @{accessType="Allow";roles="*";permissions="Read,Write";users="*"} -PSPath IIS:\ -Location $sn
+      appcmd.exe unlock config /section:system.ftpServer/firewallSupport /commit:apphost
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.firewallSupport.externalIp4Address -Value {{ ext_ip_address_host }}
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.firewallSupport.lowDataChannelPort -Value {{ ftp_port_range1 }}
+      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.firewallSupport.highDataChannelPort -Value {{ ftp_port_range2 }}            
+      Set-WebConfigurationProperty -Filter /system.ftpserver/security/ipsecurity -Name allowUnlisted -PSPath IIS:\ -Location $sn -Value $false
+    register: r1       
+    failed_when: 
+        "'add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
     tags: test
 
   - name: Add ip to allow list FTP
     win_shell: |
       Import-Module WebAdministration
-      Add-WebConfiguration -Filter /system.ftpserver/security/ipsecurity -PSPath IIS:\ -Location {{ ftp_site_name }} -Value @{ipAddress="{{ item.ip_address }}";subnetMask="{{ item.subnet_mask }}";allowed=$true}
+      $sn = '{{ ftp_site_name }}'
+      Add-WebConfiguration -Filter /system.ftpserver/security/ipsecurity -PSPath IIS:\ -Location "$sn" -Value @{ipAddress="{{ item.ip_address }}";subnetMask="{{ item.subnet_mask }}";allowed=$true}
     loop: "{{ ftp_allow_list }}"
+    register: r1       
+    failed_when: 
+        "'Cannot add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
     tags: test
 
   # - name: Open firewall ports for FTP

@@ -19,7 +19,15 @@ http_port_ae_site: "8093"
 https_port1_ae_site: "8094"
 https_port2_ae_site: "8095"
 
-ftp_path: "C:\\inetpub\\"
+ftp_folder: "FTP_ANTOR"
 ftp_port_range1: "6000"
 ftp_port_range2: "7000"
 ftp_port: "21"
+
+user_webdav: "AE-MEDIA"
+passw_user_webdav: "BfIFq2Rm7g"
+webdav_folder: "AE-MEDIA"
+webdav_site: "AE_MEDIA"
+http_port_webdav: "8098"
+https_port_webdav: "8099"
+

@@ -1,0 +1,130 @@
+---
+#Add ANTOR WebDAV
+
+- name: Create WebDav user
+  ansible.windows.win_user:
+    name: "{{ user_webdav }}"
+    password: "{{ passw_user_webdav }}"
+    state: present
+    groups:
+      - Users
+
+
+- name: Create webdav folder
+  win_file:
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}"
+    state: directory
+
+
+- name: Set rights webdav folder
+  win_acl:
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}"
+    user: "{{ user_webdav }}"
+    rights: FullControl
+    state: present
+    type: allow
+
+
+
+- name: Create webdav application pool in 'Started' state
+  microsoft.iis.web_app_pool:
+    name: "{{ webdav_site }}"
+    state: started  
+
+
+- name: Change .NET CLR
+  win_shell: |
+    Import-Module WebAdministration
+    Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name "managedRuntimeVersion" -Value ""
+
+
+# - name: Set WebDav pool authorization 
+#   win_shell: |    
+#     $username = "{{ user_webdav }}" 
+#     $password = "{{ passw_user_webdav }}"
+#     Import-Module WebAdministration
+#     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name processModel.identityType -Value Custom
+#     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name processModel.userName -Value $username
+#     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name processModel.password -Value $password
+#   tags: test  
+
+- name: "Установка сертификатов АНТОР"
+  include_role:
+    name: antor_cert
+
+
+- name: Obtain information 2
+  win_shell: |   
+    $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
+    if ($cert) {
+      Write-Output $cert.Thumbprint
+    } else {
+      # Handle case where certificate is not found
+      Write-Error "Certificate not found"
+    }
+  register: cert_hash_result
+
+
+
+- name: Create a new site WebDAV
+  microsoft.iis.website:
+    name: "{{ webdav_site }}"
+    physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}"
+    application_pool: "{{ webdav_site }}"
+    bindings:
+      set:
+       - port: "{{ http_port_webdav }}"
+         protocol: http
+       - port: "{{ https_port_webdav }}"
+         protocol: https
+         certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
+    state: stopped     
+
+
+- name: Download WEBDAV web.config 
+  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ webdav_config_file }} -O "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}\\web.config"
+
+
+- name: Behavior site AE
+  win_shell: |
+    Import-Module WebAdministration
+    $site_name = "{{ webdav_site }}"
+    Set-ItemProperty IIS:\sites\$site_name -name EnabledProtocols -Value "http, https"
+
+
+- name: Configure WebvDav site
+  win_shell: |      
+     Import-Module WebAdministration
+     $sn = '{{ webdav_site }}'     
+     Set-WebConfigurationProperty -Filter 'system.webServer/security/authentication/anonymousAuthentication' -PSPath IIS:\ -Location $sn  -Name Enabled  -Value $false
+     Set-WebConfigurationProperty -Filter 'system.webServer/security/authentication/BasicAuthentication' -PSPath IIS:\ -Location $sn  -Name Enabled  -Value $true
+     Remove-WebConfigurationProperty -Filter 'system.webServer/security/authorization' -Name '.' -AtElement @{users='*';roles='';verbs=''} -PSPath IIS:\ -Location $sn
+     Add-WebConfiguration -Filter 'system.webServer/security/authorization' -Value @{accessType="Allow";Users='AE_MEDIA';permissions="Read,Write"} -PSPath IIS:\ -Location $sn
+  register: r1       
+  failed_when: "'add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
+
+
+- name: add firewall rule ANTOR Webdav
+  win_firewall_rule:
+    name: "ANTOR WebDav Port"
+    direction: in
+    action: Allow
+    protocol: TCP
+    localport: "{{ item }}"
+    state: present
+    enabled: yes
+    profile:
+      - Domain
+      - Private
+      - Public
+  loop:
+     - "{{ http_port_webdav }}"
+     - "{{ https_port_webdav }}"
+  tags: test    
+
+- name: Start site WebDAV
+  microsoft.iis.website:
+    name: "{{ webdav_site }}"    
+    state: started
+  tags: test  
+

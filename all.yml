@@ -69,14 +69,25 @@
 
     - name: Prompt for FTP install
       pause:
-        prompt: "Установить AMTOR FTP? (да/нет)"
+        prompt: "Установить ANTOR FTP? (да/нет)"
       register: user_confirmation_input1
-      tags: test
+    
     
     - name: "Установка сайта ANTOR FTP"
       include_role:
         name: iis_ftp
       when: user_confirmation_input1.user_input | lower in yes_answer              
-      tags: test
+    
 
+    - name: Prompt for WebDav install
+      pause:
+        prompt: "Установить WebDav? (да/нет)"
+      register: user_confirmation_input1
+      tags: test
+    
+    - name: "Установка сайта WebDav"
+      include_role:
+        name: webdav
+      when: user_confirmation_input1.user_input | lower in yes_answer              
+      tags: test
     

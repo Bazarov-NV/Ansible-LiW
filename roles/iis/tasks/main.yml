@@ -46,18 +46,7 @@
     name: "DefaultAppPool"
     state: stopped
     attributes:
-      autoStart: true
+      autoStart: false
 
-- name: Create directories inetpub
-  win_file:
-    path: "{{ iis_folder }}"
-    state: directory
 
-- name: set rights tools folder
-  win_acl:
-    path: "{{ iis_folder }}"
-    user: "{{ user_antor }}"
-    rights: FullControl
-    state: present
-    type: allow
 
