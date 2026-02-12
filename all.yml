@@ -83,11 +83,21 @@
       pause:
         prompt: "Установить WebDav? (да/нет)"
       register: user_confirmation_input1
-      tags: test
+      
     
     - name: "Установка сайта WebDav"
       include_role:
         name: iis_webdav
       when: user_confirmation_input1.user_input | lower in yes_answer              
+    
+    - name: Prompt for AEGatewayService install
+      pause:
+        prompt: "Установить AEGatewayService? (да/нет)"
+      register: user_confirmation_input1
       tags: test
     
+    - name: "Установка сайта AEGatewayService"
+      include_role:
+        name: ae_gateway
+      when: user_confirmation_input1.user_input | lower in yes_answer              
+      tags: test

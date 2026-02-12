@@ -37,7 +37,7 @@
     attributes:
       autoStart: false
   loop: "{{ app_pools_info.app_pools }}"
-  when: item.name not in ("{{ antor_ent_site }}", "{{ webdav_site }}")
+  when: item.name not in (antor_ent_site,  webdav_site)
   tags: test  
 
 - name: Create webdav application pool in 'Started' state

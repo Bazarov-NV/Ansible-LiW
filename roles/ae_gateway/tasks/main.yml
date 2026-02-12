@@ -1,0 +1,70 @@
+- name: Create AEGatewayService directories 
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:  
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ db_AEGatewayService_data_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ db_AEGatewayService_log_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGateway_Log_folder }}"
+  tags: test  
+
+- name: Set rights AEGatewayService folder
+  win_acl:
+    path: "{{ item }}"
+    user: "{{ user_antor }}"
+    rights: FullControl
+    state: present
+    type: allow
+  loop:  
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ db_AEGatewayService_data_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ db_AEGatewayService_log_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGateway_Log_folder }}"
+  tags: test  
+
+
+- name: Download AEGatewayService distr from FTP
+  win_shell: 
+    wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ repo_AEGatewayService_file }} -O "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ repo_AEGatewayService_file }}"
+  tags: test  
+
+- name: Extract AEGatewayService
+  win_shell: 
+    7z x "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ repo_AEGatewayService_file }}" -o"{{ disk_install}}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}" -aos
+  tags: test
+
+- name: Restore database AEGatewayService
+  win_shell: |         
+     $connString = "Server='{{ sql_host }}\{{ sql_name }}';User ID = '{{ sql_admin }}'; Password='{{ sql_passw }}';"                
+     $file = "{{ disk_install}}\{{ antor_root_folder }}\{{ AEGatewayService_folder }}\{{ db_AEGatewayService_bak_file }}"
+     $lf = "{{ db_AEGatewayService_log_fname }}"
+     $log_dir_file = "{{ disk_install }}\{{ antor_root_folder }}\{{ AEGatewayService_folder }}\{{ db_AEGatewayService_log_folder }}\{{ db_AEGatewayService_name }}"
+     $data_dir_file = "{{ disk_install }}\{{ antor_root_folder }}\{{ AEGatewayService_folder }}\{{ db_AEGatewayService_data_folder }}\{{ db_AEGatewayService_name }}"
+     $db_name = "{{ db_AEGatewayService_name }}"
+     $sql = "RESTORE DATABASE [$db_name] FROM DISK = '$file' WITH REPLACE, RECOVERY, MOVE '${lf}' TO '${data_dir_file}.mdf',   MOVE '${lf}_Log' TO '${log_dir_file}.ldf'"        
+
+- name: Set the rating to '11'
+  community.windows.win_xml:
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ AEGatewayService_config }}"
+    xpath: /business/rating
+    value: 11  
+
+- name: Create new service AEGatewayService
+  win_service:
+    name: AEGatewayService
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ AEGatewayService_exe }}"
+    display_name: "ANTOR Enterprise TCP Gateway Service"
+    description: "Provides TCP gateway service for ANTOREnterprise platform"
+    username: "{{ user_antor }}"
+    password: "{{ passw_user_antor }}"
+    dependencies: "{{ sql_service }}"
+    start_mode: delayed    
+    state: started
+    service_type: user_own_process
+    failure_actions:
+      - type: restart
+      - type: restart
+      - type: restart
+  tags: test    
+

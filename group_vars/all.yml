@@ -30,8 +30,19 @@
   # Имя архива со всеми админскими утилиатми
   tools_file_7z: "Utils.7z"
   antor_tools_folder: "Utils"
-  
-  iis_folder: "C:\\inetpub\\ANTOR Enterprise"
+
+  #AEGatewayService
+  repo_AEGatewayService_file: "AEGatewayService.7z"
+  AEGatewayService_folder: "AEGateway"
+  db_AEGatewayService_name: "AEGateway"
+  db_AEGatewayService_bak_file: "AEGateway.bak"  
+  db_AEGatewayService_data_folder: "Data"
+  db_AEGatewayService_log_folder: "Log"
+  db_AEGatewayService_log_fname: "AEGateway"
+  AEGateway_Log_folder: "TCP Gateway Logs"
+  AEGatewayService_exe: "AEGatewayService.exe"
+  AEGatewayService_config: "AEGatewayService.exe.config"
+  #Сертификаты
   root_cert_passw: "andrewgor"
   cert_name: "ANTOR Enterprise Server"
   cert_subj_name: "CN=ANTOR Enterprise Server"
@@ -42,6 +53,7 @@
   cert_7z_file: "Certificates.7z"
   cert_folder: "Certificates"
 
+  iis_folder: "C:\\inetpub\\ANTOR Enterprise"
   ftp_site_name: "ANTOR FTP"
   ftp_allow_list:
     - ip_address: "195.239.86.110"
@@ -58,4 +70,5 @@
       subnet_mask: "255.255.255.255" 
     - ip_address: "192.168.0.0"
       subnet_mask: "255.255.255.0"      
+
 
