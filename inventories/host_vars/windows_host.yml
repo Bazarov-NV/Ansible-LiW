@@ -24,10 +24,12 @@ ftp_port_range1: "6000"
 ftp_port_range2: "7000"
 ftp_port: "21"
 
+antor_ent_site: "ANTOR Enterprise"
+
 user_webdav: "AE-MEDIA"
 passw_user_webdav: "BfIFq2Rm7g"
 webdav_folder: "AE-MEDIA"
 webdav_site: "AE_MEDIA"
-http_port_webdav: "8098"
-https_port_webdav: "8099"
+http_port_webdav: "8101"
+https_port_webdav: "8102"
 

@@ -8,13 +8,13 @@
     state: present
     groups:
       - Users
-
+  tags: test  
 
 - name: Create webdav folder
   win_file:
     path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}"
     state: directory
-
+  tags: test  
 
 - name: Set rights webdav folder
   win_acl:
@@ -23,20 +23,34 @@
     rights: FullControl
     state: present
     type: allow
+  tags: test  
 
+- name: Get all app pools         
+  microsoft.iis.web_app_pool_info:
+  register: app_pools_info
+  tags: test  
 
+- name: Stop each application pool
+  microsoft.iis.web_app_pool:
+    name: "{{ item.name }}"
+    state: stopped
+    attributes:
+      autoStart: false
+  loop: "{{ app_pools_info.app_pools }}"
+  when: item.name not in ("{{ antor_ent_site }}", "{{ webdav_site }}")
+  tags: test  
 
 - name: Create webdav application pool in 'Started' state
   microsoft.iis.web_app_pool:
     name: "{{ webdav_site }}"
     state: started  
-
+  tags: test  
 
 - name: Change .NET CLR
   win_shell: |
     Import-Module WebAdministration
     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name "managedRuntimeVersion" -Value ""
-
+  tags: test  
 
 # - name: Set WebDav pool authorization 
 #   win_shell: |    
@@ -48,12 +62,12 @@
 #     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name processModel.password -Value $password
 #   tags: test  
 
-- name: "Установка сертификатов АНТОР"
+- name: Install ANTOR certificates
   include_role:
     name: antor_cert
+  tags: test  
 
-
-- name: Obtain information 2
+- name: Obtain information certificate
   win_shell: |   
     $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
     if ($cert) {
@@ -63,7 +77,7 @@
       Write-Error "Certificate not found"
     }
   register: cert_hash_result
-
+  tags: test  
 
 
 - name: Create a new site WebDAV
@@ -79,34 +93,44 @@
          protocol: https
          certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
     state: stopped     
+  tags: test  
 
-
-- name: Download WEBDAV web.config 
-  win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ webdav_config_file }} -O "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}\\web.config"
-
+# - name: Download WEBDAV web.config 
+#   win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ webdav_config_file }} -O "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}\\web.config"
+#   tags: test  
 
 - name: Behavior site AE
   win_shell: |
     Import-Module WebAdministration
     $site_name = "{{ webdav_site }}"
     Set-ItemProperty IIS:\sites\$site_name -name EnabledProtocols -Value "http, https"
-
+  tags: test  
 
 - name: Configure WebvDav site
   win_shell: |      
      Import-Module WebAdministration
      $sn = '{{ webdav_site }}'     
+     $handler1 = @{ name = "StaticFile"; path = "*";  verb = "GET";  modules = "StaticFileModule";   resourceType = "Either";   requireAccess = "Read" }
+     $handler2 = @{ name="WebDAV"; path = "*"; verb = "PROPFIND,PROPPATCH,MKCOL,PUT,COPY,DELETE,MOVE,LOCK,UNLOCK,HEAD"; modules = "WebDAVModule"; resourceType = "Unspecified"; requireAccess = "None" }
+
+     Set-WebConfigurationProperty -filter 'system.webServer/webdav/authoring' -PSPath IIS:\ -Location $sn -Name enabled -Value $true
+     Add-WebConfigurationProperty -Filter 'system.webServer/webdav/authoringRules' -Name '.' -Value @{users='{{ user_webdav }}'; path='*'; access="Read,Write,Source"} -PSPath IIS:\ -Location $sn
      Set-WebConfigurationProperty -Filter 'system.webServer/security/authentication/anonymousAuthentication' -PSPath IIS:\ -Location $sn  -Name Enabled  -Value $false
-     Set-WebConfigurationProperty -Filter 'system.webServer/security/authentication/BasicAuthentication' -PSPath IIS:\ -Location $sn  -Name Enabled  -Value $true
+     Set-WebConfigurationProperty -Filter 'system.webServer/security/authentication/BasicAuthentication' -PSPath IIS:\ -Location $sn  -Name Enabled  -Value $true     
+     Set-WebConfigurationProperty -Filter 'system.webServer/security/requestFiltering/requestLimits' -PSPath IIS:\ -Location $sn  -Name maxAllowedContentLength -Value 4294967295
      Remove-WebConfigurationProperty -Filter 'system.webServer/security/authorization' -Name '.' -AtElement @{users='*';roles='';verbs=''} -PSPath IIS:\ -Location $sn
-     Add-WebConfiguration -Filter 'system.webServer/security/authorization' -Value @{accessType="Allow";Users='AE_MEDIA';permissions="Read,Write"} -PSPath IIS:\ -Location $sn
+     Add-WebConfiguration -Filter 'system.webServer/security/authorization' -Value @{accessType="Allow";Users='{{ user_webdav }}';permissions="Read,Write"} -PSPath IIS:\ -Location $sn
+     appcmd.exe unlock config /section:system.webServer/handlers /commit:apphost
+     Clear-WebConfiguration -Filter 'system.webServer/handlers' -PSPath IIS:\ -Location $sn -force
+     Add-WebConfigurationProperty -Filter "system.webServer/handlers"  -Name "." -Value $handler1 -PSPath IIS:\ -Location $sn
+     Add-WebConfigurationProperty -Filter "system.webServer/handlers"  -Name "." -Value $handler2 -PSPath IIS:\ -Location $sn
   register: r1       
   failed_when: "'add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
-
+  tags: test  
 
 - name: add firewall rule ANTOR Webdav
   win_firewall_rule:
-    name: "ANTOR WebDav Port"
+    name: "ANTOR WebDav Port - {{ item }}"
     direction: in
     action: Allow
     protocol: TCP
@@ -121,6 +145,12 @@
      - "{{ http_port_webdav }}"
      - "{{ https_port_webdav }}"
   tags: test    
+
+- name: Stop the default IIS web site
+  microsoft.iis.website:
+    name: "Default Web Site"
+    state: stopped
+  tags: test 
 
 - name: Start site WebDAV
   microsoft.iis.website:

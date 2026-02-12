@@ -1,5 +1,19 @@
 ---
 #Add ANTOR Enterprise site
+
+- name: Get all app pools         
+  microsoft.iis.web_app_pool_info:
+  register: app_pools_info
+
+- name: Stop each application pool
+  microsoft.iis.web_app_pool:
+    name: "{{ item.name }}"
+    state: stopped
+    attributes:
+      autoStart: false
+  loop: "{{ app_pools_info.app_pools }}"
+  when: item.name not in ("{{ antor_ent_site }}", "{{ webdav_site }}")
+
 - name: Create a new application pool in 'Started' state
   microsoft.iis.web_app_pool:
     name: "{{ antor_ent_site }}"
@@ -74,3 +88,8 @@
       - Private
       - Public
   tags: test    
+
+- name: Stop the default IIS web site
+  microsoft.iis.website:
+    name: "Default Web Site" # Replace with your site name
+    state: stopped

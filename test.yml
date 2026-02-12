@@ -10,83 +10,17 @@
     cert_folder: "Certificates"
  
 
-  tasks:
-  
-    - name: Import antor_root_authotity
-      ansible.windows.win_certificate_store:
-        path: "{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}\\{{ antor_root_authotity_file }}"
-        file_type: pkcs12
-        password: "{{ root_cert_passw }}"
-        store_name: Root
-        store_location: LocalMachine
-        key_storage: machine
+  tasks:  
+    - name: add firewall rule ANTOR Webdav
+      win_firewall_rule:
+        name: "ANTOR WebDav Port"
+        direction: in
+        action: Allow
+        protocol: TCP
+        localport: "8101, 8102"
         state: present
-      become: true
-      become_method: runas
-      become_user: SYSTEM
-      register: cert_import_result
-
-    - name: Obtain information 1
-      ansible.windows.win_shell: |   
-        $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
-        if ($cert) {
-         Write-Output $cert.Thumbprint
-        } else {
-         # Handle case where certificate is not found
-         Write-Output "Certificate not found"
-        }
-      register: cert_hash_result
-      ignore_errors: true
-
-    - name: Create server certificates
-      win_shell: 
-        "{{ disk_install}}\\{{ antor_root_folder }}\\{{ cert_folder }}\\makecert.exe -pe -n '{{ cert_subj_name }}' -ss My -sr LocalMachine -a sha1 -sky exchange -eku 1.3.6.1.5.5.7.3.1 -in '{{ antor_root_authotity }}' -is root -ir LocalMachine -sp 'Microsoft RSA SChannel Cryptographic Provider' -sy 12 '{{ cert_name }}.cer'"
-      when: cert_hash_result.stdout_lines[0] == "Certificate not found"
- 
-    - name: Obtain information 2
-      ansible.windows.win_shell: |   
-        $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "CN=ANTOR Enterprise Server" } | Select-Object -Last 1
-        if ($cert) {
-         Write-Output $cert.Thumbprint
-        } else {
-         # Handle case where certificate is not found
-        Write-Error "Certificate not found"
-        }
-      register: cert_hash_result
-
-    - name: Create a new site "ANTOR ENTERPRISE"
-      microsoft.iis.website:
-        name: "{{ antor_ent_site }}"
-        site_id: 2
-        state: started
-        physical_path: "{{ iis_folder }}"
-        application_pool: "{{ antor_ent_site }}"
-        bindings:
-          set:
-          - port: "{{ http_port_ae_site }}"
-            protocol: http
-          - port: "{{ https_port1_ae_site }}"
-            protocol: https
-            certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
-          - port: "{{ https_port2_ae_site }}"
-            protocol: https
-            certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
-
-
-
-      Import-Module WebAdministration
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.accessType -Value "Read, Write"
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.roles -Value ""
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.authorization.add.users -Value "*"  
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.externalIp4Address -Value {{ ext_ip_address_host }}
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.lowDataChannelPort -Value {{ ftp_port_range1 }}
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.firewallSupport.highDataChannelPort -Value {{ ftp_port_range2 }}
-      Set-WebConfigurationProperty -Filter /system.ftpserver/security/ipsecurity -Name allowUnlisted -Value $false -PSPath 'IIS:\' -Location {{ ftp_site_name }}
-      Set-ItemProperty IIS:\Sites\{{ ftp_site_name }} -Name ftpServer.security.ssl.serverCertHash -Value {{ cert_hash_result.stdout_lines[0] }}
-
-
- 
+        enabled: yes
+        profile:
+          - Domain
+          - Private
+          - Public
