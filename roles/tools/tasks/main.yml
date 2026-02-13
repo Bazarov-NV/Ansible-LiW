@@ -51,15 +51,15 @@
         user_id: "{{ user_adm_antor }}"
     author: "{{ user_adm_antor }}"
     username: "{{ user_adm_antor }}"
-    password: "{{ pasw_adm_antor }}"
+    password: "{{ passw_adm_antor }}"
     logon_type: interactive_token
     state: present
     enabled: true
 
-- name: Install Google Chrome via Chocolatey
-  win_chocolatey:
-    name: googlechrome
-    state: present
+# - name: Install Google Chrome via Chocolatey
+#   win_chocolatey:
+#     name: googlechrome
+#     state: present
 
 - name: Reboot server tools
   ansible.windows.win_reboot:

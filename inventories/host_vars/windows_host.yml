@@ -12,7 +12,7 @@ passw_adm_antor: "1q23456&*"
 ext_ip_address_host: "192.168.0.48"
 
 # Диапозон портов для телематики
-tele_port_range: "2238-2250"
+tele_port_range: "2225-2237"
 
 iis_ae_site_port_range: "8093-8095"
 http_port_ae_site: "8093"

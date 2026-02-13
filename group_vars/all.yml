@@ -1,74 +1,75 @@
 ---
-  yes_answer: 
-    - "да"
-    - "yes"
-    - "д"
-    - "y"
+yes_answer:
+  - "да"
+  - "yes"
+  - "д"
+  - "y"
 
- # Папка дистрибутива LiW на внутреннем сервере АНТОР
-  repo_folder: \\\\server\\антор\\Отдел Внедрения\\Релизы\\LogistinWeb\\Repo
+# Папка дистрибутива LiW на внутреннем сервере АНТОР
+repo_folder: \\\\server\\антор\\Отдел Внедрения\\Релизы\\LogistinWeb\\Repo
 
-  # Внешняя папка дистрибутива LiW на внутреннем сервере АНТОР
-  repo_folder_ext: \\\\tsclient\\V\\Релизы\\LogistinWeb\\Repo
+# Внешняя папка дистрибутива LiW на внутреннем сервере АНТОР
+repo_folder_ext: \\\\tsclient\\V\\Релизы\\LogistinWeb\\Repo
 
-  distr_folder_host: "distr"
+distr_folder_host: "distr"
 
-  # ftp server c дистрибутивом LiW
-  ftp_server_repo: "ftp://ans_distr:4M3nONDY2u@192.168.3.4"
-  ftp_folder_repo: "LiW_repo"
-  webdav_config_file: "Dav/web.config"
+# ftp server c дистрибутивом LiW
+ftp_server_repo: "ftp://ans_distr:4M3nONDY2u@192.168.3.4"
+ftp_folder_repo: "LiW_repo"
+webdav_config_file: "Dav/web.config"
 
-  # Имя виртуалки для теста
-  vm_name: win2k19-liw-test
-  # Имя snapshot для отката виртуалки в исходное состояние
-  vm_snapshot: snapshot1
+# Имя виртуалки для теста
+vm_name: win2k19-liw-test
+# Имя snapshot для отката виртуалки в исходное состояние
+vm_snapshot: snapshot1
 
-  #Папка утилит LiW на внутреннем сервере АНТОР
-  repo_utils_folder: "{{ repo_folder }}\\Utils"
-  #Внешняя папка утилит LiW на внутреннем сервере АНТОР
-  repo_utils_folder_ext: "{{ repo_folder_ext }}\\Utils"
-  # Имя архива со всеми админскими утилиатми
-  tools_file_7z: "Utils.7z"
-  antor_tools_folder: "Utils"
+#Папка утилит LiW на внутреннем сервере АНТОР
+repo_utils_folder: "{{ repo_folder }}\\Utils"
+#Внешняя папка утилит LiW на внутреннем сервере АНТОР
+repo_utils_folder_ext: "{{ repo_folder_ext }}\\Utils"
+# Имя архива со всеми админскими утилиатми
+tools_file_7z: "Utils.7z"
+antor_tools_folder: "Utils"
 
-  #AEGatewayService
-  repo_AEGatewayService_file: "AEGatewayService.7z"
-  AEGatewayService_folder: "AEGateway"
-  db_AEGatewayService_name: "AEGateway"
-  db_AEGatewayService_bak_file: "AEGateway.bak"  
-  db_AEGatewayService_data_folder: "Data"
-  db_AEGatewayService_log_folder: "Log"
-  db_AEGatewayService_log_fname: "AEGateway"
-  AEGateway_Log_folder: "TCP Gateway Logs"
-  AEGatewayService_exe: "AEGatewayService.exe"
-  AEGatewayService_config: "AEGatewayService.exe.config"
-  #Сертификаты
-  root_cert_passw: "andrewgor"
-  cert_name: "ANTOR Enterprise Server"
-  cert_subj_name: "CN=ANTOR Enterprise Server"
-  antor_root_authotity: "ANTOR Enterprise Root Authority"
-  root_cert_subj_name: "CN=ANTOR Enterprise Root Authority"
-  antor_root_authotity_file: "ANTOR Enterprise Root Authority.pfx"
+#AEGatewayService
+repo_AEGatewayService_file: "AEGatewayService.7z"
+AEGatewayService_folder: "AEGateway"
+db_AEGatewayService_name: "AEGateway"
+db_AEGatewayService_bak_file: "AEGateway.bak"
+db_AEGatewayService_data_folder: "Data"
+db_AEGatewayService_log_folder: "Log"
+db_AEGatewayService_log_fname: "AEGateway"
+AEGateway_Log_folder: "TCP Gateway Logs"
+AEGatewayService_exe: "AEGatewayService.exe"
+AEGatewayService_config: "AEGatewayService.exe.config"
+conn_str: "metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string=&quot;data source={{sql_host}}\\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework&quot;"
+AE_site_app_name: "AEGatewayServiceControl"
 
-  cert_7z_file: "Certificates.7z"
-  cert_folder: "Certificates"
+#Сертификаты
+root_cert_passw: "andrewgor"
+cert_name: "ANTOR Enterprise Server"
+cert_subj_name: "CN=ANTOR Enterprise Server"
+antor_root_authotity: "ANTOR Enterprise Root Authority"
+root_cert_subj_name: "CN=ANTOR Enterprise Root Authority"
+antor_root_authotity_file: "ANTOR Enterprise Root Authority.pfx"
 
-  iis_folder: "C:\\inetpub\\ANTOR Enterprise"
-  ftp_site_name: "ANTOR FTP"
-  ftp_allow_list:
-    - ip_address: "195.239.86.110"
-      subnet_mask: "255.255.255.255"
-    - ip_address: "94.79.3.178"
-      subnet_mask: "255.255.255.255"      
-    - ip_address: "109.95.211.244"
-      subnet_mask: "255.255.255.255"      
-    - ip_address: "79.134.204.150"
-      subnet_mask: "255.255.255.255"      
-    - ip_address: "195.19.176.118"
-      subnet_mask: "255.255.255.255"      
-    - ip_address: "31.28.31.48"
-      subnet_mask: "255.255.255.255" 
-    - ip_address: "192.168.0.0"
-      subnet_mask: "255.255.255.0"      
+cert_7z_file: "Certificates.7z"
+cert_folder: "Certificates"
 
-
+iis_folder: "C:\\inetpub\\ANTOR Enterprise"
+ftp_site_name: "ANTOR FTP"
+ftp_allow_list:
+  - ip_address: "195.239.86.110"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "94.79.3.178"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "109.95.211.244"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "79.134.204.150"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "195.19.176.118"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "31.28.31.48"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "192.168.0.0"
+    subnet_mask: "255.255.255.0"
