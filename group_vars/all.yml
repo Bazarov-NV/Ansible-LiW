@@ -4,6 +4,9 @@ yes_answer:
   - "yes"
   - "д"
   - "y"
+user_answer: "Y"
+
+delay_sec: 5
 
 # Папка дистрибутива LiW на внутреннем сервере АНТОР
 repo_folder: \\\\server\\антор\\Отдел Внедрения\\Релизы\\LogistinWeb\\Repo
@@ -43,6 +46,7 @@ AEGateway_Log_folder: "TCP Gateway Logs"
 AEGatewayService_exe: "AEGatewayService.exe"
 AEGatewayService_config: "AEGatewayService.exe.config"
 conn_str: "metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string=&quot;data source={{sql_host}}\\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework&quot;"
+conn_str_iis: "metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string=&quot;data source={{sql_host}}\\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework&quot;"
 AE_site_app_name: "AEGatewayServiceControl"
 
 #Сертификаты
@@ -72,4 +76,4 @@ ftp_allow_list:
   - ip_address: "31.28.31.48"
     subnet_mask: "255.255.255.255"
   - ip_address: "192.168.0.0"
-    subnet_mask: "255.255.255.0"
+    subnet_mask: "255.255.0.0"

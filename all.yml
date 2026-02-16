@@ -28,6 +28,7 @@
   gather_facts: false
 
   tasks:
+    # Подготовка сервера
     - name: Prompt for preconfig
       pause:
         prompt: "Выполнить подготовку сервера? (да/нет)"
@@ -38,66 +39,69 @@
         name: preconfig
       when: user_confirmation_input1.user_input | lower in yes_answer
 
+    # Устанока утилит для АНТОР админа сервера
     - name: Prompt for tools install
       pause:
         prompt: "Установить утилиты для администрирования сервера? (да/нет)"
       register: user_confirmation_input1
+
     - name: "Установка утилит"
       include_role:
         name: tools
       when: user_confirmation_input1.user_input | lower in yes_answer
-
+    # Установка роли IIS на сервере
     - name: Prompt for iis install
       pause:
         prompt: "Установить IIS? (да/нет)"
       register: user_confirmation_input1
+
     - name: "Установка IIS"
       include_role:
         name: iis
       when: user_confirmation_input1.user_input | lower in yes_answer
-    
+
+    # Установка сайта АНТОР Enterprise
     - name: Prompt for ae-site install
       pause:
         prompt: "Установить AMTOR Enterprise site? (да/нет)"
-      register: user_confirmation_input1      
-    
+      register: user_confirmation_input1
+
     - name: "Установка сайта ANTOR Enterprise"
       include_role:
         name: iis_ent_site
-      when: user_confirmation_input1.user_input | lower in yes_answer              
-      
+      when: user_confirmation_input1.user_input | lower in yes_answer
 
+    # Установка FTP
     - name: Prompt for FTP install
       pause:
         prompt: "Установить ANTOR FTP? (да/нет)"
       register: user_confirmation_input1
-    
-    
+
     - name: "Установка сайта ANTOR FTP"
       include_role:
         name: iis_ftp
-      when: user_confirmation_input1.user_input | lower in yes_answer              
-    
+      when: user_confirmation_input1.user_input | lower in yes_answer
 
+    # Установка WedDav
     - name: Prompt for WebDav install
       pause:
         prompt: "Установить WebDav? (да/нет)"
       register: user_confirmation_input1
-      
-    
+
     - name: "Установка сайта WebDav"
       include_role:
         name: iis_webdav
-      when: user_confirmation_input1.user_input | lower in yes_answer              
-    
+      when: user_confirmation_input1.user_input | lower in yes_answer
+
+    # Установка cервиса AEGatewayService
     - name: Prompt for AEGatewayService install
       pause:
         prompt: "Установить AEGatewayService? (да/нет)"
       register: user_confirmation_input1
       tags: test
-    
+
     - name: "Установка сайта AEGatewayService"
       include_role:
         name: ae_gateway
-      when: user_confirmation_input1.user_input | lower in yes_answer              
+      when: user_confirmation_input1.user_input | lower in yes_answer
       tags: test

@@ -18,7 +18,6 @@
 #   debug:
 #     msg: "{{ uac_check }}"
 
-
 - name: Temporarily disable UAC
   win_regedit:
     path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System
@@ -34,6 +33,7 @@
     bootstrap_script: "https://community.chocolatey.org/install.ps1"
     version: "1.4.3"
     state: present
+
 - name: Create ANTOR directories if it doesn't exist
   win_file:
     path: "{{ item }}"
@@ -49,6 +49,7 @@
     state: present
     groups:
       - Users
+      - Power users
 
 - name: set rights root folder
   win_acl:
@@ -71,7 +72,6 @@
 
 - name: Reboot server preconfig
   ansible.windows.win_reboot:
-
 # - name: Download 7z from FTP
 #   win_shell:
 #     wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/7z2501.exe -O "{{ antor_tools_folder }}\\7z2501.exe"

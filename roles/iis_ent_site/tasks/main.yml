@@ -1,7 +1,11 @@
 ---
 #Add ANTOR Enterprise site
 
-- name: Get all app pools         
+- name: AE site install
+  include_role:
+    name: iis
+
+- name: Get all app pools
   microsoft.iis.web_app_pool_info:
   register: app_pools_info
 
@@ -22,14 +26,14 @@
       processModel.userName: "{{ user_antor }}"
       processModel.password: "{{ passw_user_antor }}"
       processModel.loadUserProfile: true
-    state: started  
+    state: started
 
 - name: "Установка сертификатов АНТОР"
   include_role:
-     name: antor_cert
+    name: antor_cert
 
 - name: Obtain information 2
-  win_shell: |   
+  win_shell: |
     $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
     if ($cert) {
       Write-Output $cert.Thumbprint
@@ -59,14 +63,15 @@
     application_pool: "{{ antor_ent_site }}"
     bindings:
       set:
-       - port: "{{ http_port_ae_site }}"
-         protocol: http
-       - port: "{{ https_port1_ae_site }}"
-         protocol: https
-         certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
-       - port: "{{ https_port2_ae_site }}"
-         protocol: https
-         certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"  
+        - port: "{{ http_port_ae_site }}"
+          protocol: http
+        - port: "{{ https_port1_ae_site }}"
+          protocol: https
+          certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
+        - port: "{{ https_port2_ae_site }}"
+          protocol: https
+          certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
+    register: site_creating
 
 - name: Behavior site AE
   win_shell: |
@@ -87,9 +92,13 @@
       - Domain
       - Private
       - Public
-  tags: test    
+  tags: test
 
 - name: Stop the default IIS web site
   microsoft.iis.website:
     name: "Default Web Site" # Replace with your site name
     state: stopped
+
+- name: Reboot server IIS_AE site
+  ansible.windows.win_reboot:
+  when: site_creating.changed

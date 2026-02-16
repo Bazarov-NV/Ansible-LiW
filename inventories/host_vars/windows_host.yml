@@ -20,7 +20,7 @@ https_port1_ae_site: "8094"
 https_port2_ae_site: "8095"
 
 ftp_folder: "FTP_ANTOR"
-ftp_port_range1: "6000"
+ftp_port_range1: "6001"
 ftp_port_range2: "7000"
 ftp_port: "21"
 

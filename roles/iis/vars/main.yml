@@ -25,5 +25,4 @@ iis_additional_features:
   - Web-Ftp-Service
   - Web-Mgmt-Tools
   - Web-Mgmt-Console
-
-
+  - NET-WCF-HTTP-Activation45

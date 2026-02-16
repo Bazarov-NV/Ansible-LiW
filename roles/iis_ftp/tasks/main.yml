@@ -1,121 +1,81 @@
 ---
-  - name: Ensure FTP Server feature is installed
-    win_feature:
-      name: Web-Ftp-Server
-      state: present
-      include_management_tools: true
-      include_sub_features: true      
-    tags: test
+- name: Ensure FTP Server feature is installed
+  win_feature:
+    name: Web-Ftp-Server
+    state: present
+    include_management_tools: true
+    include_sub_features: true
 
-  - name: Create physical directory for FTP site
-    win_file:
-      path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
-      state: directory
-    tags: test
+- name: Create physical directory for FTP site
+  win_file:
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
+    state: directory
 
-  - name: Create the IIS FTP site
-    microsoft.iis.website:
-      name: "{{ ftp_site_name }}"      
-      physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
-      state: stopped
-    tags: test
+- name: Create the IIS FTP site
+  microsoft.iis.website:
+    name: "{{ ftp_site_name }}"
+    physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
+    state: stopped
 
-  - name: Add dd bindings to FTP site
-    win_iis_webbinding:
-      name: "{{ ftp_site_name }}"        
-      port: "{{  ftp_port }}"
-      protocol: ftp
-    tags: test
+- name: Add dd bindings to FTP site
+  win_iis_webbinding:
+    name: "{{ ftp_site_name }}"
+    port: "{{  ftp_port }}"
+    protocol: ftp
 
-  - name: Start IIS FTP site
-    microsoft.iis.website:
-      name: "{{ ftp_site_name }}"      
-      physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
-      state: started
-    tags: test
+- name: Start IIS FTP site
+  microsoft.iis.website:
+    name: "{{ ftp_site_name }}"
+    physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
+    state: started
 
+- name: Установка сертификатов АНТОР
+  include_role:
+    name: antor_cert
 
-  - name: Установка сертификатов АНТОР
-    include_role:
-        name: antor_cert
-    tags: test 
+- name: Obtain information 2
+  win_shell: |
+    $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
+    if ($cert) {
+      Write-Output $cert.Thumbprint
+    } else {
+      # Handle case where certificate is not found
+      Write-Error "Certificate not found"
+    }
+  register: cert_hash_result
 
-  - name: Obtain information 2
-    win_shell: |   
-      $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
-      if ($cert) {
-        Write-Output $cert.Thumbprint
-      } else {
-        # Handle case where certificate is not found
-        Write-Error "Certificate not found"
-      }
-    register: cert_hash_result
-    tags: test   
+- name: Configure FTP SSL
+  win_shell: |
+    Import-Module WebAdministration
+    $sn = '{{ ftp_site_name }}'  
+    Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.serverCertHash -Value {{ cert_hash_result.stdout_lines[0] }}
+  when: cert_hash_result.stdout_lines[0] | length > 0
 
-  - name: Configure FTP SSL
-    win_shell: |   
-      Import-Module WebAdministration
-      $sn = '{{ ftp_site_name }}'  
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.serverCertHash -Value {{ cert_hash_result.stdout_lines[0] }}
-    when: cert_hash_result.stdout_lines[0] | length > 0
-    tags: test
+- name: Configure FTP
+  win_shell: |
+    Import-Module WebAdministration
+    $sn = '{{ ftp_site_name }}'
+    Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
+    Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
+    Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
+    Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
+    Add-WebConfiguration -Filter /system.ftpServer/security/authorization -Value @{accessType="Allow";roles="*";permissions="Read,Write";users="*"} -PSPath IIS:\ -Location $sn
+    appcmd.exe unlock config /section:system.ftpServer/firewallSupport /commit:apphost
+    Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.firewallSupport.externalIp4Address -Value {{ ext_ip_address_host }}
+    Set-WebConfigurationProperty -PSPath IIS:\ -filter "system.ftpServer/firewallSupport" -name "lowDataChannelPort" -value {{ ftp_port_range1 }}
+    Set-WebConfigurationProperty -PSPath IIS:\ -filter "system.ftpServer/firewallSupport" -name "highDataChannelPort" -value {{ ftp_port_range2 }}    
+    Set-WebConfigurationProperty -Filter /system.ftpserver/security/ipsecurity -Name allowUnlisted -PSPath IIS:\ -Location $sn -Value $false
+  register: r1
+  failed_when: "'add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
 
-  - name: Configure FTP
-    win_shell: |      
-      Import-Module WebAdministration
-      $sn = '{{ ftp_site_name }}'
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.dataChannelPolicy -Value 0
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.ssl.controlChannelPolicy -Value 0
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.authentication.anonymousAuthentication.enabled -Value $false
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.security.authentication.BasicAuthentication.enabled -Value $true
-      Add-WebConfiguration -Filter /system.ftpServer/security/authorization -Value @{accessType="Allow";roles="*";permissions="Read,Write";users="*"} -PSPath IIS:\ -Location $sn
-      appcmd.exe unlock config /section:system.ftpServer/firewallSupport /commit:apphost
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.firewallSupport.externalIp4Address -Value {{ ext_ip_address_host }}
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.firewallSupport.lowDataChannelPort -Value {{ ftp_port_range1 }}
-      Set-ItemProperty IIS:\Sites\$sn -Name ftpServer.firewallSupport.highDataChannelPort -Value {{ ftp_port_range2 }}            
-      Set-WebConfigurationProperty -Filter /system.ftpserver/security/ipsecurity -Name allowUnlisted -PSPath IIS:\ -Location $sn -Value $false
-    register: r1       
-    failed_when: 
-        "'add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
-    tags: test
+- name: Add ip to allow list FTP
+  win_shell: |
+    Import-Module WebAdministration
+    $sn = '{{ ftp_site_name }}'
+    Add-WebConfiguration -Filter /system.ftpserver/security/ipsecurity -PSPath IIS:\ -Location "$sn" -Value @{ipAddress="{{ item.ip_address }}";subnetMask="{{ item.subnet_mask }}";allowed=$true}
+  loop: "{{ ftp_allow_list }}"
+  register: r1
+  failed_when: "'Cannot add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
 
-  - name: Add ip to allow list FTP
-    win_shell: |
-      Import-Module WebAdministration
-      $sn = '{{ ftp_site_name }}'
-      Add-WebConfiguration -Filter /system.ftpserver/security/ipsecurity -PSPath IIS:\ -Location "$sn" -Value @{ipAddress="{{ item.ip_address }}";subnetMask="{{ item.subnet_mask }}";allowed=$true}
-    loop: "{{ ftp_allow_list }}"
-    register: r1       
-    failed_when: 
-        "'Cannot add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
-    tags: test
-
-  # - name: Open firewall ports for FTP
-  #   win_firewall_rule:
-  #     name: "FTP Passive Ports"
-  #     localport: "{{ ftp_port_range1 }} - {{ ftp_port_range2 }}"
-  #     action: allow
-  #     protocol: tcp
-  #     state: present
-  #     direction: in
-  #     enabled: yes
-  #     profile: 
-  #       - Domain
-  #       - Private
-  #       - Public      
-  #   tags: test
-
-  # - name: Open FTP control port (21)
-  #   win_firewall_rule:
-  #     name: "FTP Control Port"
-  #     localport: "{{ ftp_port }}"
-  #     action: allow
-  #     protocol: tcp
-  #     state: present
-  #     direction: in      
-  #     enabled: yes
-  #     profile: 
-  #       - Domain
-  #       - Private
-  #       - Public      
-  #   tags: test
+- name: Reboot server FTP
+  ansible.windows.win_reboot:

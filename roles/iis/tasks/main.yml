@@ -48,5 +48,6 @@
     attributes:
       autoStart: false
 
-
-
+- name: Reboot server IIS
+  ansible.windows.win_reboot:
+  when: iis_install_result.changed
