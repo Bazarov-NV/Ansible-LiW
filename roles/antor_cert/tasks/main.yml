@@ -11,11 +11,6 @@
   register: cert_hash_result
   ignore_errors: true
 
-  
-- name: debug 3
-  debug:
-    msg: "{{ cert_hash_result.stdout_lines[0] }}"
-
 
 - name: Create certificates directory if it doesn't exist
   ansible.windows.win_file:
@@ -49,7 +44,6 @@
   register: cert_import_result
   when: cert_hash_result.stdout_lines[0] == "Certificate not found"
 
-
 - name: Obtain information 2
   win_shell: |   
     $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
@@ -61,7 +55,6 @@
      }
   register: cert_hash_result2
   ignore_errors: true
-
 
 - name: Create server certificates
   win_shell: 

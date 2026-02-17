@@ -8,31 +8,20 @@
     - "{{ iis_additional_features }}"
   register: iis_install_result
 
-- name: Check for pending Component Based Servicing reboot
-  ansible.windows.win_shell: Test-Path 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'
-  register: reboot_pending_result
-
 - name: Add IISp to system PATH if installation succeeded
   ansible.windows.win_path:
     name: Path
     elements: "%systemroot%\\system32\\inetsrv\\;"
     state: present
     scope: machine
-
-- name: Check for pending Windows Update reboot
-  ansible.windows.win_shell: Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
-  register: reboot_required_result
+  when: iis_install_result.changed
 
 - name: Create IIS shortcut on the desktop
   community.windows.win_shortcut:
     src: "%windir%\\system32\\inetsrv\\InetMgr.exe"
     dest: C:\Users\{{ user_adm_antor }}\Desktop\Internet Information Services (IIS) Manager.lnk
     icon: "%windir%\\system32\\inetsrv\\InetMgr.exe,0"
-
-- name: Reboot if pending
-  ansible.windows.win_reboot:
-    msg: "Rebooting for pending update"
-  when: reboot_pending_result.stdout == "True\r\n" or reboot_required_result.stdout == "True\r\n"
+  when: iis_install_result.changed  
 
 # Setup ANTOR LiW site to IIS
 

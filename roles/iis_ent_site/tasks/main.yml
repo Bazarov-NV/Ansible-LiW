@@ -5,18 +5,10 @@
   include_role:
     name: iis
 
-- name: Get all app pools
-  microsoft.iis.web_app_pool_info:
-  register: app_pools_info
-
-- name: Stop each application pool
-  microsoft.iis.web_app_pool:
-    name: "{{ item.name }}"
-    state: stopped
-    attributes:
-      autoStart: false
-  loop: "{{ app_pools_info.app_pools }}"
-  when: item.name not in ("{{ antor_ent_site }}", "{{ webdav_site }}")
+- name: Create IIS AE site folder
+  ansible.windows.win_file:
+    path: "{{ iis_folder }}"
+    state: directory   
 
 - name: Create a new application pool in 'Started' state
   microsoft.iis.web_app_pool:
@@ -25,14 +17,29 @@
       processModel.identityType: SpecificUser
       processModel.userName: "{{ user_antor }}"
       processModel.password: "{{ passw_user_antor }}"
-      processModel.loadUserProfile: true
+      processModel.loadUserProfile: false
     state: started
+  register: app_pool_created  
+
+- name: Get all app pools
+  microsoft.iis.web_app_pool_info:
+  register: app_pools_info
+  when: app_pool_created.changed
+
+- name: Stop each application pool
+  microsoft.iis.web_app_pool:
+    name: "{{ item.name }}"
+    state: stopped
+    attributes:
+      autoStart: false
+  loop: "{{ app_pools_info.app_pools }}"
+  when: app_pool_created.changed and item.name not in ("{{ antor_ent_site }}", "{{ webdav_site }}")
 
 - name: "Установка сертификатов АНТОР"
   include_role:
     name: antor_cert
 
-- name: Obtain information 2
+- name: Obtain information certificate
   win_shell: |
     $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
     if ($cert) {
@@ -42,19 +49,6 @@
       Write-Error "Certificate not found"
     }
   register: cert_hash_result
-
-- name: Create AE site folder
-  win_file:
-    path: "{{ iis_folder }}"
-    state: directory
-
-- name: Set rights AE site folder
-  win_acl:
-    path: "{{ iis_folder }}"
-    user: "{{ user_antor }}"
-    rights: FullControl
-    state: present
-    type: allow
 
 - name: Create a new site "ANTOR ENTERPRISE"
   microsoft.iis.website:
@@ -71,13 +65,29 @@
         - port: "{{ https_port2_ae_site }}"
           protocol: https
           certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
-    register: site_creating
+  register: site_created
+
+- name: Create AE site folder
+  win_file:
+    path: "{{ iis_folder }}"
+    state: directory
+  when: site_created.changed  
+
+- name: Set rights AE site folder
+  win_acl:
+    path: "{{ iis_folder }}"
+    user: "{{ user_antor }}"
+    rights: FullControl
+    state: present
+    type: allow
+  when: site_created.changed  
 
 - name: Behavior site AE
   win_shell: |
     Import-Module WebAdministration
     $site_name = "{{ antor_ent_site }}"
     Set-ItemProperty IIS:\sites\$site_name -name EnabledProtocols -Value "http, https"
+  when: site_created.changed  
 
 - name: add firewall rule ANTOR Enterprise site
   win_firewall_rule:
@@ -93,12 +103,14 @@
       - Private
       - Public
   tags: test
+  when: site_created.changed
 
 - name: Stop the default IIS web site
   microsoft.iis.website:
     name: "Default Web Site" # Replace with your site name
     state: stopped
+  when: site_created.changed  
 
 - name: Reboot server IIS_AE site
   ansible.windows.win_reboot:
-  when: site_creating.changed
+  when: site_created.changed

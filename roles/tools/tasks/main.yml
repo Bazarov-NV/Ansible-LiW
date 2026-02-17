@@ -48,7 +48,7 @@
     triggers:
       - type: logon
       - type: boot
-        user_id: "{{ user_adm_antor }}"
+    user_id: "{{ user_adm_antor }}"
     author: "{{ user_adm_antor }}"
     username: "{{ user_adm_antor }}"
     password: "{{ passw_adm_antor }}"

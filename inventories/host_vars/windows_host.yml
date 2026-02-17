@@ -1,5 +1,7 @@
 description: "Server for testing (internal)"
 
+host_name: "WIN-ROB3QJN1BSA"
+
 # Папка на клиентском сервере для установки
 antor_root_folder: "ANTOR"
 disk_install: "C:"

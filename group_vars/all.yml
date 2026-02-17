@@ -25,6 +25,7 @@ webdav_config_file: "Dav/web.config"
 vm_name: win2k19-liw-test
 # Имя snapshot для отката виртуалки в исходное состояние
 vm_snapshot: snapshot1
+vm_snapshot_2: snapshot_before_services
 
 #Папка утилит LiW на внутреннем сервере АНТОР
 repo_utils_folder: "{{ repo_folder }}\\Utils"

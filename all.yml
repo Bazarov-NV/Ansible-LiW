@@ -12,16 +12,26 @@
     - name: Prompt for revert VM to source snpashot
       ansible.builtin.pause:
         prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет)"
-      register: user_confirmation_vm
-    # - name: debug
-    #   debug:
-    #     msg: "{{ user_confirmation_vm.user_input }}"
+      register: user_confirmation_vm    
 
     - name: Revert VM to snapshot and start
       shell: |
         virsh snapshot-revert {{ vm_name }} {{ vm_snapshot }} --running --force
       become: true
       when: user_confirmation_vm.user_input | lower in yes_answer
+
+    - name: Prompt for revert VM to source snpashot 2
+      ansible.builtin.pause:
+        prompt: "Откатить {{ vm_name }} к снимку {{ vm_snapshot_2 }}? (да/нет)"
+      register: user_confirmation_vm
+      tags: test
+
+    - name: Revert VM to snapshot and start
+      shell: |
+        virsh snapshot-revert {{ vm_name }} {{ vm_snapshot_2 }} --running --force
+      become: true
+      when: user_confirmation_vm.user_input | lower in yes_answer      
+      tags: test
 
 - name: Install LiW
   hosts: liwws2019
