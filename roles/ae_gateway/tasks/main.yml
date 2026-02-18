@@ -12,7 +12,7 @@
     - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ db_AEGatewayService_log_folder }}"
     - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGateway_Log_folder }}"
     - "{{ iis_folder }}\\{{ AE_site_app_name }}"
-  tags: test
+  #tags: test
 
 - name: Set rights AEGatewayService folder
   win_acl:
@@ -27,7 +27,7 @@
     - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ db_AEGatewayService_log_folder }}"
     - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGateway_Log_folder }}"
     - "{{ iis_folder }}\\{{ AE_site_app_name }}"
-  tags: test
+  #tags: test
 
 - name: Set rights AEGatewayService DB folder
   win_acl:
@@ -39,7 +39,7 @@
   loop:
     - "MSSQL${{ sql_name }}"
     - "SYSTEM"
-  tags: test  
+  #tags: test
 
 - name: Add share
   win_share:
@@ -47,15 +47,15 @@
     description: " Share{{ AEGateway_Log_folder }}"
     path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGateway_Log_folder }}"
     full: Everyone
-  tags: test
+  #tags: test
 
 - name: Download AEGatewayService distr from FTP
   win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ repo_AEGatewayService_file }} -O "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ repo_AEGatewayService_file }}"
-  tags: test
+  #tags: test
 
 - name: Extract AEGatewayService
   win_shell: 7z x "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ repo_AEGatewayService_file }}" -o"{{ disk_install}}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}" -aos
-  tags: test
+  #tags: test
 
 - name: Add user to SQL server
   win_shell: |
@@ -63,7 +63,7 @@
     $connString = "Server='{{ sql_host }}\{{ sql_name }}';Database='master';Integrated Security=True;"                
     $sql = "CREATE LOGIN [$un] FROM WINDOWS WITH DEFAULT_DATABASE=[master]; ALTER SERVER ROLE [sysadmin] ADD MEMBER [$un]"
     Invoke-Sqlcmd -ConnectionString $connString -Query $sql -QueryTimeout 0
-  tags: test
+  #tags: test
 
 - name: Restore database AEGatewayService
   win_shell: |
@@ -75,7 +75,7 @@
     $db_name = "{{ db_AEGatewayService_name }}"
     $sql = "RESTORE DATABASE [$db_name] FROM DISK = '$file' WITH REPLACE, RECOVERY, MOVE '${lf}' TO '${data_dir_file}.mdf',   MOVE '${lf}_Log' TO '${log_dir_file}.ldf'"
     Invoke-Sqlcmd -ConnectionString $connString -Query $sql -QueryTimeout 0
-  tags: test
+  #tags: test
 
 - name: Set Log dir in AEGatewayService config
   community.windows.win_xml:
@@ -84,7 +84,7 @@
     fragment: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGateway_Log_folder }}"
     type: text
     state: present
-  tags: test
+  #tags: test
 
 - name: Set Debug mode to true in AEGatewayService config
   community.windows.win_xml:
@@ -93,7 +93,7 @@
     fragment: "True"
     type: text
     state: present
-  tags: test
+  #tags: test
 
 - name: Set SQL ConnectionString in AEGatewayService config
   community.windows.win_xml:
@@ -103,7 +103,7 @@
     type: attribute
     attribute: "connectionString"
     state: present
-  tags: test
+  #tags: test
 
 - name: add firewall rule AEGatewayService
   win_firewall_rule:
@@ -118,7 +118,7 @@
       - Domain
       - Private
       - Public
-  tags: test
+  #tags: test
 
 - name: Grant domain account the "Log on as a service" user right
   ansible.windows.win_user_right:
@@ -126,51 +126,45 @@
     users:
       - "{{ host_name }}\\{{ user_antor }}"
     action: add
-  tags: test  
+  #tags: test
 
 - name: Create AEGatewayService service
-  win_command: 
-    sc create AEGatewayService binPath= "{{ disk_install }}\{{ antor_root_folder }}\{{ AEGatewayService_folder }}\{{ AEGatewayService_exe }}"  DisplayName= "ANTOR Enterprise TCP Gateway Service" type= own start= auto
-  register: rs1  
-  tags: test
+  win_command: sc create AEGatewayService binPath= "{{ disk_install }}\{{ antor_root_folder }}\{{ AEGatewayService_folder }}\{{ AEGatewayService_exe }}"  DisplayName= "ANTOR Enterprise TCP Gateway Service" type= own start= auto
+  register: rs1
+  #tags: test
 
 - name: Debug 1
   debug:
     var: rs1
-  tags: test  
+  #tags: test
 
 - name: Pause 1
   pause:
-  tags: test
+  #tags: test
 
 - name: Add description AEGatewayService service
-  win_command: 
-    sc description AEGatewayService "Provides TCP gateway service for ANTOREnterprise platform"
-  tags: test
+  win_command: sc description AEGatewayService "Provides TCP gateway service for ANTOREnterprise platform"
+  #tags: test
 
 - name: Change start type AEGatewayService service
-  win_command: 
-    sc config "AEGatewayService" start=delayed-auto    
-  tags: test  
+  win_command: sc config "AEGatewayService" start=delayed-auto
+  #tags: test
 
 - name: Change user AEGatewayService service
-  win_command: 
-    sc config "AEGatewayService" obj="{{ host_name }}\{{ user_antor }}" password="{{ passw_user_antor }}"
-  tags: test    
+  win_command: sc config "AEGatewayService" obj="{{ host_name }}\{{ user_antor }}" password="{{ passw_user_antor }}"
+  #tags: test
   register: rs2
 
 - name: Debug 2
   debug:
     var: rs2
-  tags: test  
+  #tags: test
 
 - name: Pause 2
   pause:
-  tags: test
+  #tags: test
 
-
-
-- name: Create new service AEGatewayService
+- name: Change service AEGatewayService
   win_service:
     name: AEGatewayService
     dependencies: "{{ sql_service }}"
@@ -181,22 +175,18 @@
   #tags: test
 
 - name: Set GrantServicePerwmisiion 1
-  win_command: 
-    '"{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\Security\\subinacl.exe" /service AEGatewayService /grant="{{ user_antor }}"=F'
+  win_command: '"{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\Security\\subinacl.exe" /service AEGatewayService /grant="{{ user_antor }}"=F'
   #tags: test
 
 - name: Set GrantServicePerwmisiion 2
-  win_command: 
-    '"{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\Security\\subinacl.exe" /subdirectories "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\*"  /grant="{{ antor_ent_site }}"=F'
-  #tags: test  
-
+  win_command: '"{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\Security\\subinacl.exe" /subdirectories "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\*"  /grant="{{ user_antor }}"=F'
+  #tags: test
 
 - name: Start service AEGatewayService
   win_service:
     name: AEGatewayService
     state: started
   #tags: test
-
 
 - name: Check database AEGatewayService
   win_shell: |
@@ -209,14 +199,12 @@
 - name: Display the SQL output
   debug:
     var: sql_result
-  #tags: test  
+  #tags: test
 
 - name: Pause for 10 seconds
   pause:
     seconds: 10
-  #tags: test  
-
-# здесь требуется проверка записей в таблице [AEGateway].[dbo].[ServiceLogEvents]
+  #tags: test
 
 - name: Copy files for web service AEGatewayService
   community.windows.win_robocopy:
@@ -238,30 +226,24 @@
   #tags: test
 
 - name: Add web application
-  microsoft.iis.web_application:
-    name: "{{ AE_site_app_name }} "
-    site: ANTOR Enterprise
-    state: present
-    physical_path: "{{ iis_folder }}\\{{ AE_site_app_name }}\\"
-    application_pool: "{{ antor_ent_site }}"
+  win_shell: |
+    New-WebApplication -Name AEGatewayServiceControl -Site "{{ antor_ent_site }}" -PhysicalPath "{{ iis_folder }}\{{ AE_site_app_name }}" -ApplicationPool "{{ antor_ent_site }}"
   #tags: test
 
 - name: Reboot server after AEGatewayService
   ansible.windows.win_reboot:
 
 - name: test AEGatewayServiceControl
-  win_shell:
-    curl http://localhost:{{ http_port_ae_site }}/AEGatewayServiceControl/DataService.svc/ServiceLogEvents
+  win_shell: curl http://localhost:{{ http_port_ae_site }}/AEGatewayServiceControl/DataService.svc/ServiceLogEvents -UseBasicParsing
   register: curl_result
-  #tags: test
+  tags: test
 
 - name: Display the CURL output
   debug:
     var: curl_result
-  #tags: test  
+  tags: test
 
 - name: Pause for 10 seconds
   pause:
-    seconds: 10    
-  #tags: test  
-
+    seconds: 10
+  tags: test

@@ -4,7 +4,7 @@ yes_answer:
   - "yes"
   - "д"
   - "y"
-user_answer: "Y"
+user_answer: ""
 
 delay_sec: 5
 
@@ -24,8 +24,8 @@ webdav_config_file: "Dav/web.config"
 # Имя виртуалки для теста
 vm_name: win2k19-liw-test
 # Имя snapshot для отката виртуалки в исходное состояние
-vm_snapshot: snapshot1
-vm_snapshot_2: snapshot_before_services
+vm_snapshot: snapshot2
+vm_snapshot_2: snapshot3
 
 #Папка утилит LiW на внутреннем сервере АНТОР
 repo_utils_folder: "{{ repo_folder }}\\Utils"
@@ -37,7 +37,7 @@ antor_tools_folder: "Utils"
 
 #AEGatewayService
 repo_AEGatewayService_file: "AEGatewayService.7z"
-AEGatewayService_folder: "AEGateway"
+AEGatewayService_folder: "AEGatewayService"
 db_AEGatewayService_name: "AEGateway"
 db_AEGatewayService_bak_file: "AEGateway.bak"
 db_AEGatewayService_data_folder: "Data"
@@ -46,9 +46,11 @@ db_AEGatewayService_log_fname: "AEGateway"
 AEGateway_Log_folder: "TCP Gateway Logs"
 AEGatewayService_exe: "AEGatewayService.exe"
 AEGatewayService_config: "AEGatewayService.exe.config"
-conn_str: "metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string=&quot;data source={{sql_host}}\\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework&quot;"
-conn_str_iis: "metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string=&quot;data source={{sql_host}}\\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework&quot;"
+conn_str: metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+conn_str_iis: metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
 AE_site_app_name: "AEGatewayServiceControl"
+
+antor_ent_site: "ANTOR Enterprise"
 
 #Сертификаты
 root_cert_passw: "andrewgor"
@@ -78,3 +80,5 @@ ftp_allow_list:
     subnet_mask: "255.255.255.255"
   - ip_address: "192.168.0.0"
     subnet_mask: "255.255.0.0"
+
+all_install: false

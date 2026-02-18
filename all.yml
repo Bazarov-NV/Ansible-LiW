@@ -12,7 +12,7 @@
     - name: Prompt for revert VM to source snpashot
       ansible.builtin.pause:
         prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет)"
-      register: user_confirmation_vm    
+      register: user_confirmation_vm
 
     - name: Revert VM to snapshot and start
       shell: |
@@ -24,14 +24,12 @@
       ansible.builtin.pause:
         prompt: "Откатить {{ vm_name }} к снимку {{ vm_snapshot_2 }}? (да/нет)"
       register: user_confirmation_vm
-      tags: test
 
     - name: Revert VM to snapshot and start
       shell: |
         virsh snapshot-revert {{ vm_name }} {{ vm_snapshot_2 }} --running --force
       become: true
-      when: user_confirmation_vm.user_input | lower in yes_answer      
-      tags: test
+      when: user_confirmation_vm.user_input | lower in yes_answer
 
 - name: Install LiW
   hosts: liwws2019
@@ -43,75 +41,116 @@
       pause:
         prompt: "Выполнить подготовку сервера? (да/нет)"
       register: user_confirmation_input1
+      when: not all_install
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
 
     - name: "Подготовка сервера"
       include_role:
         name: preconfig
-      when: user_confirmation_input1.user_input | lower in yes_answer
+      when: (all_install | bool) or (user_answer in yes_answer)
 
-    # Устанока утилит для АНТОР админа сервера
+    # Установка утилит для АНТОР админа сервера
     - name: Prompt for tools install
       pause:
         prompt: "Установить утилиты для администрирования сервера? (да/нет)"
       register: user_confirmation_input1
+      when: not all_install
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
 
     - name: "Установка утилит"
       include_role:
         name: tools
-      when: user_confirmation_input1.user_input | lower in yes_answer
+      when: (all_install | bool) or (user_answer in yes_answer)
+
     # Установка роли IIS на сервере
     - name: Prompt for iis install
       pause:
         prompt: "Установить IIS? (да/нет)"
       register: user_confirmation_input1
+      when: not all_install
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
 
     - name: "Установка IIS"
       include_role:
         name: iis
-      when: user_confirmation_input1.user_input | lower in yes_answer
+      when: (all_install | bool) or (user_answer in yes_answer)
 
     # Установка сайта АНТОР Enterprise
     - name: Prompt for ae-site install
       pause:
         prompt: "Установить AMTOR Enterprise site? (да/нет)"
       register: user_confirmation_input1
+      when: not all_install
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
 
     - name: "Установка сайта ANTOR Enterprise"
       include_role:
         name: iis_ent_site
-      when: user_confirmation_input1.user_input | lower in yes_answer
+      when: (all_install | bool) or (user_answer in yes_answer)
 
     # Установка FTP
     - name: Prompt for FTP install
       pause:
         prompt: "Установить ANTOR FTP? (да/нет)"
       register: user_confirmation_input1
+      when: not all_install
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
 
     - name: "Установка сайта ANTOR FTP"
       include_role:
         name: iis_ftp
-      when: user_confirmation_input1.user_input | lower in yes_answer
+      when: (all_install | bool) or (user_answer in yes_answer)
 
     # Установка WedDav
     - name: Prompt for WebDav install
       pause:
         prompt: "Установить WebDav? (да/нет)"
       register: user_confirmation_input1
+      when: not all_install
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
 
     - name: "Установка сайта WebDav"
       include_role:
         name: iis_webdav
-      when: user_confirmation_input1.user_input | lower in yes_answer
+      when: (all_install | bool) or (user_answer in yes_answer)
 
     # Установка cервиса AEGatewayService
     - name: Prompt for AEGatewayService install
       pause:
         prompt: "Установить AEGatewayService? (да/нет)"
       register: user_confirmation_input1
-      tags: test
+      when: not all_install
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
 
     - name: "Установка сайта AEGatewayService"
       include_role:
         name: ae_gateway
-      when: user_confirmation_input1.user_input | lower in yes_answer
-      tags: test
+      when: (all_install | bool) or (user_answer in yes_answer)
