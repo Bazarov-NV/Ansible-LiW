@@ -1,31 +1,31 @@
 description: "Server for testing (internal)"
 
+#Название сервера
 host_name: "WIN-ROB3QJN1BSA"
-
+#Внешний IP сервера
+ext_ip_address_host: "192.168.0.48"
 # Папка на клиентском сервере для установки
 antor_root_folder: "ANTOR"
 disk_install: "C:"
-
+#Пользователь АНТОР
 user_antor: "ANTOR-ENTERPRISE"
 passw_user_antor: "BfIFq2Rm7g"
 user_adm_antor: "antor_admin"
 passw_adm_antor: "1q23456&*"
 
-ext_ip_address_host: "192.168.0.48"
-
-# Диапозон портов для телематики
-tele_port_range: "2225-2237"
-
+#iis
 iis_ae_site_port_range: "8093-8095"
 http_port_ae_site: "8093"
 https_port1_ae_site: "8094"
 https_port2_ae_site: "8095"
 
+#ftp
 ftp_folder: "FTP_ANTOR"
 ftp_port_range1: "6001"
 ftp_port_range2: "7000"
 ftp_port: "21"
 
+#webdav
 user_webdav: "AE-MEDIA"
 passw_user_webdav: "BfIFq2Rm7g"
 webdav_folder: "AE-MEDIA"
@@ -33,9 +33,30 @@ webdav_site: "AE_MEDIA"
 http_port_webdav: "8101"
 https_port_webdav: "8102"
 
+# ae_gatewayservice
+tele_port_range: "2225-2237"
+
+#sql
 sql_name: "SQL2019"
 sql_host: "WIN-ROB3QJN1BSA"
 sql_admin: "sa"
 sql_passw: "6MbYCXm4NY95BFG6O4dB"
 sql_win_admin: "antor_admin"
 sql_service: "MSSQL$SQL2019"
+
+#silence mode
+silence_mode: false
+all_install: false
+
+#list of components to install
+#if all_install=false, this list will ignore
+list_components:
+#  - "preconfig"
+  - "tools"
+  - "iis"
+  - "ae_site"
+  - "ftp"
+  - "webdav"
+  - "aegateway"
+  - "aereports"
+

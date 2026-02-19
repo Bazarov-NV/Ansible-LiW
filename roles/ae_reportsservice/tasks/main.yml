@@ -1,0 +1,126 @@
+- name: 7z ae_report_service on repo host
+  shell: 7z a -r {{  dir_7z_ae_report_loc }}/{{ file_7z_ae_report_loc }} {{ repo_folder_loc }}/{{ repo_folder_ae_report }}/
+  register: q1
+  delegate_to: root_ansible_host
+  run_once: true    
+  ##tags: test  
+
+- name: Copy 7z AEReportsService to target host
+  win_copy:
+    src: "{{  dir_7z_ae_report_loc }}/{{ file_7z_ae_report_loc }}"
+    dest: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ file_7z_ae_report_loc }}"
+  ##tags: test  
+
+
+
+- name: Create AEReportService directory
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEReportsService_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}"  
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}\\{{ report_avalon_dir }}"  
+  ##tags: test
+
+- name: Set rights AEReportService folder
+  win_acl:
+    path: "{{ item }}"
+    user: "{{ user_antor }}"
+    rights: FullControl
+    state: present
+    type: allow
+  loop:
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEReportsService_folder }}"
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}"  
+    - "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}\\{{ report_avalon_dir }}"  
+  ##tags: test
+
+- name: Extract AEReportService
+  win_shell: 
+    7z x "{{ disk_install }}\{{ antor_root_folder }}\{{ distr_folder_host }}\{{ file_7z_ae_report_loc }}" -o"{{ disk_install }}\{{ antor_root_folder }}\{{ AEReportsService_folder }}" -aos -spe
+  #tags: test  
+
+
+
+- name: Set Tmp dir in ReportsService config
+  community.windows.win_xml:
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEReportsService_folder }}\\{{ aereportsservice_config }}"
+    xpath: /configuration/userSettings/*/setting[@name="TmpDir" and @serializeAs="String"]/value
+    fragment: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}\\"
+    type: text
+    state: present
+  tags: test
+
+- name: Set Report dir in ReportsService config
+  community.windows.win_xml:
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEReportsService_folder }}\\{{ aereportsservice_config }}"
+    xpath: /configuration/userSettings/*/setting[@name="ReportDir" and @serializeAs="String"]/value
+    fragment: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}\\{{ report_avalon_dir }}\\"
+    type: text
+    state: present
+  tags: test
+
+- name: Set port in ReportsService config
+  community.windows.win_xml:
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEReportsService_folder }}\\{{ aereportsservice_config }}"
+    xpath: /configuration/userSettings/*/setting[@name="Port" and @serializeAs="String"]/value
+    fragment: "{{ ae_reports_port }}"
+    type: text
+    state: present
+  tags: test
+
+- name: add firewall rule AEReportsService
+  win_firewall_rule:
+    name: "ANTOR Enterprise Reports Port"
+    direction: in
+    action: Allow
+    protocol: TCP
+    localport: "{{ ae_reports_port }}"
+    state: present
+    enabled: yes
+    profile:
+      - Domain
+      - Private
+      - Public
+  tags: test
+
+- name: Grant domain account the "Log on as a service" user right
+  ansible.windows.win_user_right:
+    name: SeServiceLogonRight
+    users:
+      - "{{ host_name }}\\{{ user_antor }}"
+    action: add
+  tags: test
+
+- name: Set service AEReportsService 
+  win_service:
+    name: "{{ ae_reports_service_name }}"    
+    display_name: "ANTOR Enterprise Reporting Service"
+    description: "Provides reporting service for ANTOREnterprise platform"
+    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEReportsService_folder }}\\{{ aereportsservice_exe }}"
+    username: "{{ host_name }}\\{{ user_antor }}"
+    password: "{{ passw_user_antor }}"
+    start_mode: "delayed"
+    failure_actions:
+      - type: restart
+      - type: restart
+      - type: restart
+  tags: test    
+
+- name: Change service AEReportsService dependencies
+  win_service:
+    name: "{{ ae_reports_service_name }}"
+    dependencies: "{{ sql_service }}"
+  when: sql_host == host_name
+  tags: test
+
+- name: Start service AEReportsService
+  win_service:
+    name: "{{ ae_reports_service_name }}"
+    state: started
+  register: rs2    
+  tags: test    
+
+- name: Reboot server after AEReportsService
+  ansible.windows.win_reboot:

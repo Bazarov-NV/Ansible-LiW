@@ -1,32 +1,17 @@
 ---
-yes_answer:
-  - "да"
-  - "yes"
-  - "д"
-  - "y"
-user_answer: ""
-
-delay_sec: 5
-
+#Расположение дистибутивов
 # Папка дистрибутива LiW на внутреннем сервере АНТОР
-repo_folder: \\\\server\\антор\\Отдел Внедрения\\Релизы\\LogistinWeb\\Repo
-
+repo_folder: "\\\\server\\антор\\Отдел Внедрения\\Релизы\\LogistinWeb\\Repo"
 # Внешняя папка дистрибутива LiW на внутреннем сервере АНТОР
-repo_folder_ext: \\\\tsclient\\V\\Релизы\\LogistinWeb\\Repo
-
+repo_folder_ext: "\\\\tsclient\\V\\Релизы\\LogistinWeb\\Repo"
+repo_folder_loc: "/mnt/server_antor"
 distr_folder_host: "distr"
 
 # ftp server c дистрибутивом LiW
 ftp_server_repo: "ftp://ans_distr:4M3nONDY2u@192.168.3.4"
 ftp_folder_repo: "LiW_repo"
-webdav_config_file: "Dav/web.config"
 
-# Имя виртуалки для теста
-vm_name: win2k19-liw-test
-# Имя snapshot для отката виртуалки в исходное состояние
-vm_snapshot: snapshot2
-vm_snapshot_2: snapshot3
-
+#tools
 #Папка утилит LiW на внутреннем сервере АНТОР
 repo_utils_folder: "{{ repo_folder }}\\Utils"
 #Внешняя папка утилит LiW на внутреннем сервере АНТОР
@@ -35,23 +20,10 @@ repo_utils_folder_ext: "{{ repo_folder_ext }}\\Utils"
 tools_file_7z: "Utils.7z"
 antor_tools_folder: "Utils"
 
-#AEGatewayService
-repo_AEGatewayService_file: "AEGatewayService.7z"
-AEGatewayService_folder: "AEGatewayService"
-db_AEGatewayService_name: "AEGateway"
-db_AEGatewayService_bak_file: "AEGateway.bak"
-db_AEGatewayService_data_folder: "Data"
-db_AEGatewayService_log_folder: "Log"
-db_AEGatewayService_log_fname: "AEGateway"
-AEGateway_Log_folder: "TCP Gateway Logs"
-AEGatewayService_exe: "AEGatewayService.exe"
-AEGatewayService_config: "AEGatewayService.exe.config"
-conn_str: metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
-conn_str_iis: metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
-AE_site_app_name: "AEGatewayServiceControl"
-
+#IIS
+iis_folder: "C:\\inetpub\\ANTOR Enterprise"
 antor_ent_site: "ANTOR Enterprise"
-
+ftp_site_name: "ANTOR FTP"
 #Сертификаты
 root_cert_passw: "andrewgor"
 cert_name: "ANTOR Enterprise Server"
@@ -63,8 +35,7 @@ antor_root_authotity_file: "ANTOR Enterprise Root Authority.pfx"
 cert_7z_file: "Certificates.7z"
 cert_folder: "Certificates"
 
-iis_folder: "C:\\inetpub\\ANTOR Enterprise"
-ftp_site_name: "ANTOR FTP"
+#ftp
 ftp_allow_list:
   - ip_address: "195.239.86.110"
     subnet_mask: "255.255.255.255"
@@ -81,4 +52,52 @@ ftp_allow_list:
   - ip_address: "192.168.0.0"
     subnet_mask: "255.255.0.0"
 
-all_install: false
+#WebDav
+webdav_config_file: "Dav/web.config"
+
+#AEGatewayService
+ae_gateway_service_name: "AEGatewayService"
+repo_AEGatewayService_file: "AEGatewayService.7z"
+AEGatewayService_folder: "AEGatewayService"
+db_AEGatewayService_name: "AEGateway"
+db_AEGatewayService_bak_file: "AEGateway.bak"
+db_AEGatewayService_data_folder: "Data"
+db_AEGatewayService_log_folder: "Log"
+db_AEGatewayService_log_fname: "AEGateway"
+AEGateway_Log_folder: "TCP Gateway Logs"
+AEGatewayService_exe: "AEGatewayService.exe"
+AEGatewayService_config: "AEGatewayService.exe.config"
+conn_str: metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+conn_str_iis: metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+AE_site_app_name: "AEGatewayServiceControl"
+
+
+#ae_reportsservice
+ae_reports_service_name: "AEReportsService"
+file_7z_ae_report_loc:  "ae_report_service.7z"
+AEReportsService_folder: "AEReportsService"
+avalon_dir: "AVALON"
+report_avalon_dir: "REPORT"
+dir_7z_ae_report_loc:  "/home/nbaz"
+repo_folder_ae_report: "AEReportsService"
+ae_reports_port: "8103"
+aereportsservice_exe: "AEReportsService.exe"
+aereportsservice_config: "AEReportsService.exe.config"
+reports_service_host: "localhost"
+
+
+
+
+# Имя виртуалки для теста
+vm_name: win2k19-liw-test
+# Имя snapshot для отката виртуалки в исходное состояние
+vm_snapshot: snapshot2
+vm_snapshot_2: snapshot3
+yes_answer:
+  - "да"
+  - "yes"
+  - "д"
+  - "y"
+user_answer: ""
+delay_sec: 5
+# install all enable components
