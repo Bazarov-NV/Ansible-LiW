@@ -46,12 +46,13 @@ sql_service: "MSSQL$SQL2019"
 
 #silence mode
 silence_mode: false
+# install all enable components
 all_install: false
 
 #list of components to install
 #if all_install=false, this list will ignore
 list_components:
-#  - "preconfig"
+  #  - "preconfig"
   - "tools"
   - "iis"
   - "ae_site"
@@ -59,4 +60,3 @@ list_components:
   - "webdav"
   - "aegateway"
   - "aereports"
-

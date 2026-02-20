@@ -1,0 +1,5 @@
+# Имя виртуалки для теста
+vm_name: win2k19-liw-test
+# Имя snapshot для отката виртуалки в исходное состояние
+vm_snapshot: snapshot2
+vm_snapshot_2: snapshot3

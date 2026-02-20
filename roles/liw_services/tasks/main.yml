@@ -1,0 +1,33 @@
+- name: 7z dbs liw services on repo host
+  shell: 7z a -r ~/{{ dbs_file_7z }} {{ db_loc_path }}/
+  register: q1
+  delegate_to: 127.0.0.1
+  run_once: true
+  tags: test
+
+- name: Copy 7z file dbs liw services to target host
+  win_copy:
+    src: ~/{{ dbs_file_7z }}
+    dest: "{{ distr_folder_host }}\\{{ dbs_file_7z }}"
+  tags: test
+
+- name: Extract baks
+  win_shell: 7z x "{{ distr_folder_host }}\\{{ dbs_file_7z }}" -o"{{ distr_folder_host }}" -aos
+  tags: test
+
+- name: Create dbs directory
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop: "{{ liw_services_list | map(attribute='install_dir') | list  + [db_folder_host , db_log_dir , db_data_dir] }}"
+  tags: test
+
+- name: Set rights AEReportService folder
+  win_acl:
+    path: "{{ item }}"
+    user: "{{ user_antor }}"
+    rights: FullControl
+    state: present
+    type: allow
+  loop: "{{ liw_services_list | map(attribute='install_dir') | list  + [db_folder_host , db_log_dir , db_data_dir] }}"
+  tags: test

@@ -1,11 +1,22 @@
 ---
+repo_folder_mnt: "/mnt/server_antor"
+dir_7z_report_loc: "/home/nbaz"
+
+yes_answer:
+  - "да"
+  - "yes"
+  - "д"
+  - "y"
+user_answer: ""
+delay_sec: 5
+
 #Расположение дистибутивов
 # Папка дистрибутива LiW на внутреннем сервере АНТОР
 repo_folder: "\\\\server\\антор\\Отдел Внедрения\\Релизы\\LogistinWeb\\Repo"
 # Внешняя папка дистрибутива LiW на внутреннем сервере АНТОР
 repo_folder_ext: "\\\\tsclient\\V\\Релизы\\LogistinWeb\\Repo"
-repo_folder_loc: "/mnt/server_antor"
-distr_folder_host: "distr"
+
+distr_folder_host: "{{ disk_install }}\\{{ antor_root_folder }}\\distr"
 
 # ftp server c дистрибутивом LiW
 ftp_server_repo: "ftp://ans_distr:4M3nONDY2u@192.168.3.4"
@@ -67,37 +78,160 @@ db_AEGatewayService_log_fname: "AEGateway"
 AEGateway_Log_folder: "TCP Gateway Logs"
 AEGatewayService_exe: "AEGatewayService.exe"
 AEGatewayService_config: "AEGatewayService.exe.config"
-conn_str: metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
-conn_str_iis: metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+conn_str: >
+  metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;
+  provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};
+  integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+conn_str_iis: >
+  metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;
+  provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};
+  integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
 AE_site_app_name: "AEGatewayServiceControl"
-
-
 #ae_reportsservice
 ae_reports_service_name: "AEReportsService"
-file_7z_ae_report_loc:  "ae_report_service.7z"
-AEReportsService_folder: "AEReportsService"
-avalon_dir: "AVALON"
-report_avalon_dir: "REPORT"
-dir_7z_ae_report_loc:  "/home/nbaz"
-repo_folder_ae_report: "AEReportsService"
+file_7z_ae_report_loc: "ae_report_service.7z"
+AEReportsService_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\AEReportsService"
+avalon_dir: "{{ disk_install }}\\{{ antor_root_folder }}\\AVALON"
+report_avalon_dir: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}\\REPORT"
+repo_folder_ae_report: "{{ repo_folder_mnt }}/AEReportsService"
 ae_reports_port: "8103"
 aereportsservice_exe: "AEReportsService.exe"
 aereportsservice_config: "AEReportsService.exe.config"
 reports_service_host: "localhost"
 
+#LIW services
+repo_liw_services_mnt: "{{ repo_folder_mnt }}/LIWServices"
+webpages_dir: "{{ avalon_dir }}\\WEBPAGES"
 
+dbs_file_7z: "dbs_liw_services.7z"
+db_loc_path: "{{ repo_liw_services_mnt }}/DB"
+db_folder_host: "{{ disk_install }}\\{{ antor_root_folder }}\\DB_LIW_SERVICES"
+db_log_dir: "{{ db_folder_host }}\\Log"
+db_data_dir: "{{ db_folder_host }}\\Data"
+etalon_bak_path: "{{ db_folder_host }}\\ETALON\\etalon.bak"
 
+db_list:
+  - name: "AE_ADDRESS"
+    db_name: "AE_ADDRESS"
+    bak_file: "AEAddress.bak"
+    log_names: ["AE_ADDRESS", "AE_ADDRESS_log"]
+    mdf_name: "AE_ADDRESS.mdf"
+    ldf_name: "AE_ADDRESS_log.ldf"
+    spec_sql: []
+  - name: "AEFuelCard"
+    db_name: "AEFuelCard"
+    bak_file: "AEFuelCard.bak"
+    log_names: ["AEFuelCard", "AEFuelCard_log"]
+    mdf_name: "AEFuelCard.mdf"
+    ldf_name: "AEFuelCard_log.ldf"
+    spec_sql: []
+  - name: "CENTRAL"
+    db_name: "CENTRAL"
+    bak_file: "CENTRAL.bak"
+    log_names: ["CENTRAL", "CENTRAL_log"]
+    mdf_name: "CENTRAL.mdf"
+    ldf_name: "CENTRAL_log.ldf"
+    spec_sql: ["CENTRAL_JOB.sql", "CENTRAL_PARAM_FUNC.sql"]
+  - name: "LOG"
+    db_name: "LOG"
+    bak_file: "Log.bak"
+    log_names: ["ANTOR_LOG", "ANTOR_LOG_log"]
+    mdf_name: "LOG.mdf"
+    ldf_name: "LOG_log.ldf"
+    spec_sql: ["CENTRAL_JOB.sql", "CENTRAL_PARAM_FUNC.sql"]
 
-# Имя виртуалки для теста
-vm_name: win2k19-liw-test
-# Имя snapshot для отката виртуалки в исходное состояние
-vm_snapshot: snapshot2
-vm_snapshot_2: snapshot3
-yes_answer:
-  - "да"
-  - "yes"
-  - "д"
-  - "y"
-user_answer: ""
-delay_sec: 5
-# install all enable components
+config_params:
+  - name: "ConnString"
+    xpath: /configuration/connectionStrings/*[@name="ConnString"]
+    value: >
+      "Data Source={{ sql_host }}\\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name' 'equalto' 'CENTRAL') | map(attribute='db_name') | first  }};
+      Max Pool Size=200;Integrated Security=SSPI"
+    type: "attribute"
+    attribute: "connectionString"
+    text: ""
+  - name: "CentralEntities"
+    xpath: /configuration/connectionStrings/*[@name="CentralEntities"]
+    value: >
+      metadata=res://*/CentralModel.csdl|res://*/CentralModel.ssdl|res://*/CentralModel.msl;provider=System.Data.SqlClient;
+      provider connection string="data source={{ sql_host }}\\{{ sql_name }};initial catalog={{ db_list | selectattr('name' 'equalto' 'CENTRAL') | map(attribute='db_name') | first  }};
+      integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+    type: "attribute"
+    attribute: "connectionString"
+    text: ""
+  - name: "LOGEntities"
+    xpath: /configuration/connectionStrings/*[@name="LOGEntities"]
+    value: >
+      metadata=res://*/LogModel.csdl|res://*/LogModel.ssdl|res://*/LogModel.msl;provider=System.Data.SqlClient;provider connection string=
+      "data source={{ sql_host }}\{{ sql_name }};initial catalog={{ db_list | selectattr('name' 'equalto' 'LOG') | map(attribute='db_name') | first  }};
+      integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+    type: "attribute"
+    attribute: "connectionString"
+    text: ""
+  - name: "TmpDir"
+    xpath: /configuration/appSettings/*[@key="TmpDir"]
+    value: "{{ avalon_dir }}\\"
+    type: "attribute"
+    attribute: "value"
+    text: ""
+  - name: "ReportDir"
+    xpath: /configuration/appSettings/*[@key="ReportDir"]
+    value: "{{ report_avalon_dir }}\\"
+    type: "attribute"
+    attribute: "value"
+    text: ""
+  - name: "ReportServiceAddress1"
+    xpath: /configuration/appSettings/*[@key="ReportServiceAddress1"]
+    value: "{{ reports_service_host }}"
+    type: "attribute"
+    attribute: "value"
+    text: ""
+  - name: "ReportServicePort1"
+    xpath: /configuration/appSettings/*[@key="ReportServicePort1"]
+    value: "{{ ae_reports_port }}"
+    type: "attribute"
+    attribute: "value"
+    text: ""
+  - name: "WebDir"
+    xpath: /configuration/appSettings/*[@key="WebDir"]
+    value: "{{ webpages_dir }}\\"
+    type: "attribute"
+    attribute: "value"
+    text: ""
+
+liw_services_list:
+  - name: "AXAdmin"
+    repo_path: "/AxAdmin"
+    install_dir: "{{ iis_folder }}\\AXAdmin"
+    webapp_name: "AXAdmin"
+    config_file: "Web.config"
+    config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','CentralEntities','TmpDir']) | list }}"
+  - name: "AXLog"
+    repo_path: "/AXLog"
+    install_dir: "{{ iis_folder }}\\AXLog"
+    webapp_name: "AXLog"
+    config_file: "Web.config"
+    config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','LOGEntities','TmpDir']) | list }}"
+  - name: "AXSession"
+    repo_path: "/AXSession"
+    install_dir: "{{ iis_folder }}\\AXSession"
+    webapp_name: "AXSession"
+    config_file: "Web.config"
+    config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir']) | list }}"
+  - name: "AXStream"
+    repo_path: "/AXStream"
+    install_dir: "{{ iis_folder }}\\AXStream"
+    webapp_name: "AXStream"
+    config_file: "Web.config"
+    config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir', 'ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"
+  - name: "LiwAPI"
+    repo_path: "/LiwAPI"
+    install_dir: "{{ iis_folder }}\\LiwAPI"
+    webapp_name: "LiwAPI"
+    config_file: "Web.config"
+    config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir','WebDir','ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"
+  - name: "MSession"
+    repo_path: "/MSession"
+    install_dir: "{{ iis_folder }}\\MSession"
+    webapp_name: "MSession"
+    config_file: "Web.config"
+    config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir','ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"

@@ -128,53 +128,9 @@
     action: add
   #tags: test
 
-# - name: Create AEGatewayService service
-#   win_command: sc create {{ ae_gateway_service_name }} binPath= "{{ disk_install }}\{{ antor_root_folder }}\{{ AEGatewayService_folder }}\{{ AEGatewayService_exe }}"  DisplayName= "ANTOR Enterprise TCP Gateway Service" type= own start= auto
-#   register: rs1
-#   #tags: test
-
-# - name: Debug 1
-#   debug:
-#     var: rs1
-#   #tags: test
-
-# - name: Pause 1
-#   pause:
-#   #tags: test
-
-# - name: Add description AEGatewayService service
-#   win_command: sc description {{ ae_gateway_service_name }} "Provides TCP gateway service for ANTOREnterprise platform"
-#   #tags: test
-
-# - name: Change start type AEGatewayService service
-#   win_command: sc config "{{ ae_gateway_service_name }}" start=delayed-auto
-#   #tags: test
-
-# - name: Change user AEGatewayService service
-#   win_command: sc config "{{ ae_gateway_service_name }}" obj="{{ host_name }}\{{ user_antor }}" password="{{ passw_user_antor }}"
-#   #tags: test
-#   register: rs2
-
-# - name: Debug 2
-#   debug:
-#     var: rs2
-#   #tags: test
-
-# - name: Pause 2
-#   pause:
-#   #tags: test
-
-# - name: Change service AEGatewayService failure actions
-#   win_service:
-#     name: "{{ ae_gateway_service_name }}"    
-#     failure_actions:
-#       - type: restart
-#       - type: restart
-#       - type: restart
-
-- name: Set service AEGatewayService 
+- name: Set service AEGatewayService
   win_service:
-    name: "{{ ae_gateway_service_name }}"    
+    name: "{{ ae_gateway_service_name }}"
     display_name: "ANTOR Enterprise TCP Gateway Service"
     description: "Provides TCP gateway service for ANTOREnterprise platform"
     path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ AEGatewayService_folder }}\\{{ AEGatewayService_exe }}"
@@ -185,7 +141,7 @@
       - type: restart
       - type: restart
       - type: restart
-  tags: test  
+  tags: test
 
 - name: Change service AEGatewayService dependencies
   win_service:
@@ -264,5 +220,5 @@
   tags: test
 
 - name: Pause for 10 seconds
-  pause:    
+  pause:
   tags: test
