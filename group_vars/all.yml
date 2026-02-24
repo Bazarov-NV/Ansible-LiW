@@ -92,7 +92,7 @@ ae_reports_service_name: "AEReportsService"
 file_7z_ae_report_loc: "ae_report_service.7z"
 AEReportsService_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\AEReportsService"
 avalon_dir: "{{ disk_install }}\\{{ antor_root_folder }}\\AVALON"
-report_avalon_dir: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ avalon_dir }}\\REPORT"
+report_avalon_dir: "{{ avalon_dir }}\\REPORT"
 repo_folder_ae_report: "{{ repo_folder_mnt }}/AEReportsService"
 ae_reports_port: "8103"
 aereportsservice_exe: "AEReportsService.exe"
@@ -102,6 +102,8 @@ reports_service_host: "localhost"
 #LIW services
 repo_liw_services_mnt: "{{ repo_folder_mnt }}/LIWServices"
 webpages_dir: "{{ avalon_dir }}\\WEBPAGES"
+liw_services_distr: "{{ distr_folder_host }}\\LIWServices"
+liw_services_distr_bak: "{{ distr_folder_host }}\\LIWServices\\DB"
 
 dbs_file_7z: "dbs_liw_services.7z"
 db_loc_path: "{{ repo_liw_services_mnt }}/DB"
@@ -109,6 +111,13 @@ db_folder_host: "{{ disk_install }}\\{{ antor_root_folder }}\\DB_LIW_SERVICES"
 db_log_dir: "{{ db_folder_host }}\\Log"
 db_data_dir: "{{ db_folder_host }}\\Data"
 etalon_bak_path: "{{ db_folder_host }}\\ETALON\\etalon.bak"
+
+replace_str_list:
+ - '###db_name_central###'
+ - '###db_name_aegateway###'
+ - '###etalon_bak###'
+ - '###sql_data_dir###'
+ - '###sql_log_dir###' 
 
 db_list:
   - name: "AE_ADDRESS"
@@ -131,21 +140,21 @@ db_list:
     log_names: ["CENTRAL", "CENTRAL_log"]
     mdf_name: "CENTRAL.mdf"
     ldf_name: "CENTRAL_log.ldf"
-    spec_sql: ["CENTRAL_JOB.sql", "CENTRAL_PARAM_FUNC.sql"]
+    spec_sql: ["CENTRAL_JOB.sql", "CENTRAL_PARAM_FUNC.sql", "CleanPoints_JOB.sql"]
   - name: "LOG"
     db_name: "LOG"
     bak_file: "Log.bak"
     log_names: ["ANTOR_LOG", "ANTOR_LOG_log"]
     mdf_name: "LOG.mdf"
     ldf_name: "LOG_log.ldf"
-    spec_sql: ["CENTRAL_JOB.sql", "CENTRAL_PARAM_FUNC.sql"]
+    spec_sql: []
 
 config_params:
   - name: "ConnString"
     xpath: /configuration/connectionStrings/*[@name="ConnString"]
     value: >
-      "Data Source={{ sql_host }}\\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name' 'equalto' 'CENTRAL') | map(attribute='db_name') | first  }};
-      Max Pool Size=200;Integrated Security=SSPI"
+      Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'CENTRAL') | map(attribute='db_name') | first  }};
+      Max Pool Size=200;Integrated Security=SSPI
     type: "attribute"
     attribute: "connectionString"
     text: ""
@@ -153,7 +162,7 @@ config_params:
     xpath: /configuration/connectionStrings/*[@name="CentralEntities"]
     value: >
       metadata=res://*/CentralModel.csdl|res://*/CentralModel.ssdl|res://*/CentralModel.msl;provider=System.Data.SqlClient;
-      provider connection string="data source={{ sql_host }}\\{{ sql_name }};initial catalog={{ db_list | selectattr('name' 'equalto' 'CENTRAL') | map(attribute='db_name') | first  }};
+      provider connection string="data source={{ sql_host }}\{{ sql_name }};initial catalog={{ db_list | selectattr('name', 'equalto', 'CENTRAL') | map(attribute='db_name') | first  }};
       integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
     type: "attribute"
     attribute: "connectionString"
@@ -162,7 +171,7 @@ config_params:
     xpath: /configuration/connectionStrings/*[@name="LOGEntities"]
     value: >
       metadata=res://*/LogModel.csdl|res://*/LogModel.ssdl|res://*/LogModel.msl;provider=System.Data.SqlClient;provider connection string=
-      "data source={{ sql_host }}\{{ sql_name }};initial catalog={{ db_list | selectattr('name' 'equalto' 'LOG') | map(attribute='db_name') | first  }};
+      "data source={{ sql_host }}\{{ sql_name }};initial catalog={{ db_list | selectattr('name', 'equalto', 'LOG') | map(attribute='db_name') | first  }};
       integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
     type: "attribute"
     attribute: "connectionString"
@@ -205,33 +214,48 @@ liw_services_list:
     webapp_name: "AXAdmin"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','CentralEntities','TmpDir']) | list }}"
+    test_command: [] 
   - name: "AXLog"
     repo_path: "/AXLog"
     install_dir: "{{ iis_folder }}\\AXLog"
     webapp_name: "AXLog"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','LOGEntities','TmpDir']) | list }}"
+    test_command: 
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXLog/LogDataService.svc/A__LOG/"
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXLog/Service.svc/rest/hello"
+      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXLog/Service.svc/rest/hello"
   - name: "AXSession"
     repo_path: "/AXSession"
     install_dir: "{{ iis_folder }}\\AXSession"
     webapp_name: "AXSession"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir']) | list }}"
+    test_command: []
   - name: "AXStream"
     repo_path: "/AXStream"
     install_dir: "{{ iis_folder }}\\AXStream"
     webapp_name: "AXStream"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir', 'ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"
+    test_command:
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXStream/Service.svc/rest/hello"
+      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXStream/Service.svc/rest/hello"
   - name: "LiwAPI"
     repo_path: "/LiwAPI"
     install_dir: "{{ iis_folder }}\\LiwAPI"
     webapp_name: "LiwAPI"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir','WebDir','ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"
+    test_command:
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/LiwAPI/Service.svc/hello"
+      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/LiwAPI/Service.svc/hello"
   - name: "MSession"
     repo_path: "/MSession"
     install_dir: "{{ iis_folder }}\\MSession"
     webapp_name: "MSession"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir','ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"
+    test_command: 
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/MSession/Service.svc/hello"
+      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/MSession/Service.svc/hello"
