@@ -1,14 +1,15 @@
 ---
 #Add ANTOR Enterprise site
 
-- name: AE site install
+- name: IIS install
   include_role:
     name: iis
+  when: not iis_installed
 
 - name: Create IIS AE site folder
   ansible.windows.win_file:
     path: "{{ iis_folder }}"
-    state: directory   
+    state: directory
 
 - name: Create a new application pool in 'Started' state
   microsoft.iis.web_app_pool:
@@ -19,7 +20,7 @@
       processModel.password: "{{ passw_user_antor }}"
       processModel.loadUserProfile: false
     state: started
-  register: app_pool_created  
+  register: app_pool_created
 
 - name: Get all app pools
   microsoft.iis.web_app_pool_info:
@@ -71,7 +72,7 @@
   win_file:
     path: "{{ iis_folder }}"
     state: directory
-  when: site_created.changed  
+  when: site_created.changed
 
 - name: Set rights AE site folder
   win_acl:
@@ -80,14 +81,14 @@
     rights: FullControl
     state: present
     type: allow
-  when: site_created.changed  
+  when: site_created.changed
 
 - name: Behavior site AE
   win_shell: |
     Import-Module WebAdministration
     $site_name = "{{ antor_ent_site }}"
     Set-ItemProperty IIS:\sites\$site_name -name EnabledProtocols -Value "http, https"
-  when: site_created.changed  
+  when: site_created.changed
 
 - name: add firewall rule ANTOR Enterprise site
   win_firewall_rule:
@@ -109,8 +110,12 @@
   microsoft.iis.website:
     name: "Default Web Site" # Replace with your site name
     state: stopped
-  when: site_created.changed  
+  when: site_created.changed
 
 - name: Reboot server IIS_AE site
   ansible.windows.win_reboot:
   when: site_created.changed
+
+- name: Set fact component installed
+  set_fact:
+    ae_site_installed: true

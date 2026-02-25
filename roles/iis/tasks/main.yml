@@ -21,7 +21,7 @@
     src: "%windir%\\system32\\inetsrv\\InetMgr.exe"
     dest: C:\Users\{{ user_adm_antor }}\Desktop\Internet Information Services (IIS) Manager.lnk
     icon: "%windir%\\system32\\inetsrv\\InetMgr.exe,0"
-  when: iis_install_result.changed  
+  when: iis_install_result.changed
 
 # Setup ANTOR LiW site to IIS
 
@@ -40,3 +40,7 @@
 - name: Reboot server IIS
   ansible.windows.win_reboot:
   when: iis_install_result.changed
+
+- name: Set fact component installed
+  set_fact:
+    iis_installed: true

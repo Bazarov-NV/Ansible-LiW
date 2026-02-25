@@ -5,7 +5,7 @@
 #   run_once: true
 #   tags: test
 - name: 7z ae_report_service on repo host
-  shell: 7z a -r ~/{{ file_7z_ae_report_loc }} {{ repo_folder_ae_report }}/
+  shell: 7z a -r ~/{{ file_7z_ae_report_loc }} {{ repo_ae_report_mnt }}/
   register: q1
   delegate_to: 127.0.0.1
   run_once: true
@@ -26,6 +26,13 @@
     - "{{ avalon_dir }}"
     - "{{ report_avalon_dir }}"
   tags: test
+
+- name: Add share
+  win_share:
+    name: "{{ avalon_dir }}"
+    description: " Share {{ avalon_dir }}"
+    path: "{{ avalon_dir }}"
+    full: Everyone
 
 - name: Set rights AEReportService folder
   win_acl:
@@ -125,3 +132,7 @@
 
 - name: Reboot server after AEReportsService
   ansible.windows.win_reboot:
+
+- name: Set fact component installed
+  set_fact:
+    aereports_installed: true

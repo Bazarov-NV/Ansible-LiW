@@ -1,0 +1,124 @@
+- name: AE site install
+  include_role:
+    name: iis_ent_site
+  when: not ae_site_installed
+
+- name: 7z PPSvc service on repo host
+  shell: 7z a -r ~/{{ repo_pp_7z }} {{ repo_pp_mnt }}/
+  delegate_to: 127.0.0.1
+  run_once: true
+  tags: test
+
+- name: Copy 7z PPSvc service to target host
+  win_copy:
+    src: "~/{{ repo_pp_7z }}"
+    dest: "{{ distr_folder_host }}\\{{ repo_pp_7z }}"
+  tags: test
+
+- name: Create folders
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ pp_folder }}"
+    - "{{ avalon_dir }}"
+  tags: test
+
+- name: Add share AVALON
+  win_share:
+    name: "{{ avalon_dir }}"
+    description: " Share {{ avalon_dir }}"
+    path: "{{ avalon_dir }}"
+    full: Everyone
+
+- name: Set rights folders
+  win_acl:
+    path: "{{ item }}"
+    user: "{{ user_antor }}"
+    rights: FullControl
+    state: present
+    type: allow
+  loop:
+    - "{{ pp_folder }}"
+    - "{{ avalon_dir }}"
+  tags: test
+
+- name: Extract PPSvc service
+  win_shell: 7z x "{{ distr_folder_host }}\\{{ repo_pp_7z }}" -o"{{ pp_folder }}" -aos -spe
+
+- name: Set Tmp dir in PPSvc config
+  community.windows.win_xml:
+    path: "{{ pp_folder }}\\{{ pp_config_file }}"
+    xpath: /configuration/appSettings[@key="TmpDir"]/value
+    fragment: "{{ avalon_dir }}\\"
+    type: text
+    state: present
+  tags: test
+
+- name: Set SQL ConnectionString CENTRAL in PPSvc config
+  community.windows.win_xml:
+    path: "{{ pp_folder }}\\{{ pp_config_file }}"
+    xpath: /configuration/connectionStrings/*[@name="ConnCentral"]
+    fragment: >
+      Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'CENTRAL') | map(attribute='db_name') | first  }};
+      Max Pool Size=200;Integrated Security=SSPI
+    type: attribute
+    attribute: "connectionString"
+    state: present
+  tags: test
+
+- name: Set SQL ConnectionString ConnGateway in PPSvc config
+  community.windows.win_xml:
+    path: "{{ pp_folder }}\\{{ pp_config_file }}"
+    xpath: /configuration/connectionStrings/*[@name="ConnGateway"]
+    fragment: >
+      Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'AEGateway') | map(attribute='db_name') | first  }};
+      Max Pool Size=200;Integrated Security=SSPI
+    type: attribute
+    attribute: "connectionString"
+    state: present
+  tags: test
+
+- name: Grant domain account the "Log on as a service" user right
+  ansible.windows.win_user_right:
+    name: SeServiceLogonRight
+    users:
+      - "{{ host_name }}\\{{ user_antor }}"
+    action: add
+  tags: test
+
+- name: Set service AEPPSvc
+  win_service:
+    name: "{{ PPSvc_service_name }}"
+    display_name: "ANTOR Point Processing Service"
+    description: "Provides point processing for ANTOR platforms"
+    path: "{{ pp_folder }}\\{{ pp_exe_file }}"
+    username: "{{ host_name }}\\{{ user_antor }}"
+    password: "{{ passw_user_antor }}"
+    start_mode: "delayed"
+    failure_actions:
+      - type: restart
+      - type: restart
+      - type: restart
+  tags: test
+
+- name: Change service AEPPSvc dependencies
+  win_service:
+    name: "{{ PPSvc_service_name }}"
+    dependencies: "{{ sql_service }}"
+  when: sql_host == host_name
+  tags: test
+
+- name: Start service AEPPSvc
+  win_service:
+    name: "{{ PPSvc_service_name }}"
+    state: started
+  register: rs2
+  tags: test
+
+- name: Reboot server after AEPPSvc
+  ansible.windows.win_reboot:
+
+- name: Set fact component installed
+  set_fact:
+    ppsvc_installed: true

@@ -1,4 +1,9 @@
 ---
+- name: IIS install
+  include_role:
+    name: iis
+  when: not iis_installed
+
 - name: Ensure FTP Server feature is installed
   win_feature:
     name: Web-Ftp-Server
@@ -32,6 +37,7 @@
 - name: Установка сертификатов АНТОР
   include_role:
     name: antor_cert
+  when: not antor_cert_installed
 
 - name: Obtain information 2
   win_shell: |
@@ -79,3 +85,7 @@
 
 - name: Reboot server FTP
   ansible.windows.win_reboot:
+
+- name: Set fact component installed
+  set_fact:
+    ftp_installed: true

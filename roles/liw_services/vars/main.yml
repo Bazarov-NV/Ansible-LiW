@@ -1,0 +1,13 @@
+replace_str_list:
+  - "###db_name_central###"
+  - "###db_name_aegateway###"
+  - "###etalon_bak###"
+  - "###sql_data_dir###"
+  - "###sql_log_dir###"
+
+value_str_list:
+  - "{{ db_list | selectattr('name', 'equalto', 'CENTRAL') | map(attribute='db_name') | first }}"
+  - "{{ db_list | selectattr('name', 'equalto', 'AEGateway') | map(attribute='db_name') | first }}"
+  - "{{ etalon_bak_path }}"
+  - "{{ db_data_dir }}"
+  - "{{ db_log_dir }}"

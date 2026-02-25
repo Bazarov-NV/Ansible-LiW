@@ -1,25 +1,25 @@
 ---
 - name: Create tools directory if it doesn't exist
   ansible.windows.win_file:
-    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}"
+    path: "{{ antor_tools_folder }}"
     state: directory
 
 - name: Set rights tools folder
   win_acl:
-    path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}"
+    path: "{{ antor_tools_folder }}"
     user: "{{ user_antor }}"
     rights: FullControl
     state: present
     type: allow
 
 - name: Download utils distr from FTP
-  win_shell: wget {{ftp_server_repo}}/{{ftp_folder_repo}}/{{tools_file_7z}} -O "{{disk_install}}\\{{antor_root_folder}}\\{{distr_folder_host}}\\{{tools_file_7z}}"
+  win_shell: wget {{ftp_server_repo}}/{{ftp_folder_repo}}/{{tools_file_7z}} -O "{{distr_folder_host}}\\{{tools_file_7z}}"
 
 - name: Extract all utils 7z to tools folder
-  win_shell: 7z x "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ tools_file_7z }}" -o"{{ disk_install}}\\{{ antor_root_folder }}\\{{ distr_folder_host }}" -aoa
+  win_shell: 7z x "{{ distr_folder_host }}\\{{ tools_file_7z }}" -o"{{ distr_folder_host }}" -aoa
 
 - name: Extract utils
-  win_shell: 7z x "{{ disk_install }}\\{{ antor_root_folder }}\\{{ distr_folder_host }}\\{{ item.zip_name }}" -o"{{ item.path }}" -aoa
+  win_shell: 7z x "{{ distr_folder_host }}\\{{ item.zip_name }}" -o"{{ item.path }}" -aoa
   loop: "{{ tools_list }}"
   when: item.zip_name | length > 0
 
@@ -43,8 +43,8 @@
     display_name: Background info
     hidden: true
     actions:
-      - path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
-        arguments: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0 /nolicprompt"
+      - path: "{{ antor_tools_folder }}\\bginfo\\bginfo64.exe"
+        arguments: "{{ antor_tools_folder }}\\bginfo\\bg_config.bgi /timer:0 /nolicprompt"
     triggers:
       - type: logon
       - type: boot
@@ -63,3 +63,7 @@
 
 - name: Reboot server tools
   ansible.windows.win_reboot:
+
+- name: Set fact component installed
+  set_fact:
+    tools_installed: true

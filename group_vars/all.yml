@@ -35,6 +35,7 @@ antor_tools_folder: "Utils"
 iis_folder: "C:\\inetpub\\ANTOR Enterprise"
 antor_ent_site: "ANTOR Enterprise"
 ftp_site_name: "ANTOR FTP"
+
 #Сертификаты
 root_cert_passw: "andrewgor"
 cert_name: "ANTOR Enterprise Server"
@@ -63,41 +64,37 @@ ftp_allow_list:
   - ip_address: "192.168.0.0"
     subnet_mask: "255.255.0.0"
 
-#WebDav
-webdav_config_file: "Dav/web.config"
-
 #AEGatewayService
 ae_gateway_service_name: "AEGatewayService"
 repo_AEGatewayService_file: "AEGatewayService.7z"
-AEGatewayService_folder: "AEGatewayService"
-db_AEGatewayService_name: "AEGateway"
-db_AEGatewayService_bak_file: "AEGateway.bak"
-db_AEGatewayService_data_folder: "Data"
-db_AEGatewayService_log_folder: "Log"
-db_AEGatewayService_log_fname: "AEGateway"
-AEGateway_Log_folder: "TCP Gateway Logs"
-AEGatewayService_exe: "AEGatewayService.exe"
-AEGatewayService_config: "AEGatewayService.exe.config"
-conn_str: >
-  metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;
-  provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};
-  integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
-conn_str_iis: >
-  metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;
-  provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};initial catalog={{ db_AEGatewayService_name }};
-  integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+AEGatewayService_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\AEGatewayService"
+AEGateway_Log_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\TCP Gateway Logs"
 AE_site_app_name: "AEGatewayServiceControl"
+
 #ae_reportsservice
 ae_reports_service_name: "AEReportsService"
 file_7z_ae_report_loc: "ae_report_service.7z"
 AEReportsService_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\AEReportsService"
 avalon_dir: "{{ disk_install }}\\{{ antor_root_folder }}\\AVALON"
 report_avalon_dir: "{{ avalon_dir }}\\REPORT"
-repo_folder_ae_report: "{{ repo_folder_mnt }}/AEReportsService"
 ae_reports_port: "8103"
-aereportsservice_exe: "AEReportsService.exe"
-aereportsservice_config: "AEReportsService.exe.config"
 reports_service_host: "localhost"
+
+#FuelCard
+fuelcard_service_name: "AEFuelCardService"
+repo_fc_mnt: "{{ repo_folder_mnt }}/FuelCard_svc"
+repo_fc_7z: "fc_distr.7z"
+fc_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\FuelCard_svc"
+fc_exe_file: "FuelCard_svc.exe"
+fc_config_file: "FuelCard_svc.exe.config"
+
+#PPSvc
+ppsvc_service_name: "AEPointProcessingService"
+repo_pp_mnt: "{{ repo_folder_mnt }}/PPSvc"
+repo_pp_7z: "pp_distr.7z"
+pp_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\PPSvc"
+pp_exe_file: "PPSvc.exe"
+pp_config_file: "PPSvc.exe.config"
 
 #LIW services
 repo_liw_services_mnt: "{{ repo_folder_mnt }}/LIWServices"
@@ -105,19 +102,10 @@ webpages_dir: "{{ avalon_dir }}\\WEBPAGES"
 liw_services_distr: "{{ distr_folder_host }}\\LIWServices"
 liw_services_distr_bak: "{{ distr_folder_host }}\\LIWServices\\DB"
 
-dbs_file_7z: "dbs_liw_services.7z"
+repo_liws_7z: "dbs_liw_services.7z"
 db_loc_path: "{{ repo_liw_services_mnt }}/DB"
-db_folder_host: "{{ disk_install }}\\{{ antor_root_folder }}\\DB_LIW_SERVICES"
-db_log_dir: "{{ db_folder_host }}\\Log"
-db_data_dir: "{{ db_folder_host }}\\Data"
-etalon_bak_path: "{{ db_folder_host }}\\ETALON\\etalon.bak"
 
-replace_str_list:
- - '###db_name_central###'
- - '###db_name_aegateway###'
- - '###etalon_bak###'
- - '###sql_data_dir###'
- - '###sql_log_dir###' 
+etalon_bak_path: "{{ db_folder_host }}\\ETALON\\etalon.bak"
 
 db_list:
   - name: "AE_ADDRESS"
@@ -140,13 +128,21 @@ db_list:
     log_names: ["CENTRAL", "CENTRAL_log"]
     mdf_name: "CENTRAL.mdf"
     ldf_name: "CENTRAL_log.ldf"
-    spec_sql: ["CENTRAL_JOB.sql", "CENTRAL_PARAM_FUNC.sql", "CleanPoints_JOB.sql"]
+    spec_sql:
+      ["CENTRAL_JOB.sql", "CENTRAL_PARAM_FUNC.sql", "CleanPoints_JOB.sql"]
   - name: "LOG"
     db_name: "LOG"
     bak_file: "Log.bak"
     log_names: ["ANTOR_LOG", "ANTOR_LOG_log"]
     mdf_name: "LOG.mdf"
     ldf_name: "LOG_log.ldf"
+    spec_sql: []
+  - name: "AEGateway"
+    db_name: "AEGateway"
+    bak_file: "AEGateway.bak"
+    log_names: ["AEGateway", "AEGateway_log"]
+    mdf_name: "AEGateway.mdf"
+    ldf_name: "AEGateway_log.ldf"
     spec_sql: []
 
 config_params:
@@ -214,14 +210,14 @@ liw_services_list:
     webapp_name: "AXAdmin"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','CentralEntities','TmpDir']) | list }}"
-    test_command: [] 
+    test_command: []
   - name: "AXLog"
     repo_path: "/AXLog"
     install_dir: "{{ iis_folder }}\\AXLog"
     webapp_name: "AXLog"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','LOGEntities','TmpDir']) | list }}"
-    test_command: 
+    test_command:
       - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXLog/LogDataService.svc/A__LOG/"
       - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXLog/Service.svc/rest/hello"
       - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXLog/Service.svc/rest/hello"
@@ -256,6 +252,6 @@ liw_services_list:
     webapp_name: "MSession"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir','ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"
-    test_command: 
+    test_command:
       - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/MSession/Service.svc/hello"
       - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/MSession/Service.svc/hello"

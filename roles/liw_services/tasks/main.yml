@@ -1,25 +1,38 @@
-- name: 7z dbs liw services on repo host
-  shell: 7z a -r ~/{{ dbs_file_7z }} {{ db_loc_path }}/
+- name: AE site install
+  include_role:
+    name: iis_ent_site
+  when: not ae_site_installed
+
+- name: 7z liw services and baks on repo host
+  shell: 7z a -r ~/{{ repo_liws_7z }} {{ db_loc_path }}/
   register: q1
   delegate_to: 127.0.0.1
   run_once: true
   #tags: test
 
-- name: Copy 7z file dbs liw services to target host
+- name: Copy 7z file liw services to target host
   win_copy:
-    src: ~/{{ dbs_file_7z }}
-    dest: "{{ distr_folder_host }}\\{{ dbs_file_7z }}"
+    src: ~/{{ repo_liws_7z }}
+    dest: "{{ distr_folder_host }}\\{{ repo_liws_7z }}"
   #tags: test
 
-- name: Extract baks
-  win_shell: 7z x "{{ distr_folder_host }}\\{{ dbs_file_7z }}" -o"{{ distr_folder_host }}" -aos
+- name: Extract liw services and baks
+  win_shell: 7z x "{{ distr_folder_host }}\\{{ repo_liws_7z }}" -o"{{ distr_folder_host }}" -aos
   #tags: test
 
-- name: Create dbs directory
+- name: Create directories
   ansible.windows.win_file:
     path: "{{ item }}"
     state: directory
-  loop: "{{ liw_services_list | map(attribute='install_dir') | list  + [db_folder_host , db_log_dir , db_data_dir] }}"
+  loop: "{{ liw_services_list | map(attribute='install_dir') | list  + [db_folder_host , db_log_dir , db_data_dir, avalon_dir, webpages_dir] }}"
+  #tags: test
+
+- name: Add share
+  win_share:
+    name: "{{ avalon_dir }}"
+    description: " Share {{ avalon_dir }}"
+    path: "{{ avalon_dir }}"
+    full: Everyone
   #tags: test
 
 - name: Set rights liw services folder
@@ -32,7 +45,16 @@
   loop: "{{ liw_services_list | map(attribute='install_dir') | list  + [db_folder_host , db_log_dir , db_data_dir] }}"
   #tags: test
 
-- name: Restore liw services databases 
+- name: Add user to SQL server
+  win_shell: |
+    $un = "{{ host_name }}\{{ user_antor }}"
+    $connString = "Server='{{ sql_host }}\{{ sql_name }}';Database='master';Integrated Security=True;"
+    $sql = "IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = N'$un') `
+      BEGIN CREATE LOGIN [$un] FROM WINDOWS WITH DEFAULT_DATABASE=[master]; ALTER SERVER ROLE [sysadmin] ADD MEMBER [$un] END"
+    Invoke-Sqlcmd -ConnectionString $connString -Query $sql -QueryTimeout 0
+  #tags: test
+
+- name: Restore liw services databases
   win_shell: |
     $connString = "Server='{{ sql_host }}\{{ sql_name }}';Database='master';Integrated Security=True;"
     $file = "{{liw_services_distr_bak }}\{{ item.bak_file }}"
@@ -48,65 +70,56 @@
   #tags: test
 
 - name: Prepare SQL files
-  win_shell: 
-    (Get-Content -Path "{{ liw_services_distr_bak }}\{{ item.0.1 }}").replace('{{ item.1.0 }}','{{ item.1.1 }}') | Set-Content -Path "{{ liw_services_distr_bak }}\{{ item.0.1 }}"
-  loop: "{{ db_list | subelements('spec_sql', skip_missing=True) | product(replace_str_list | zip(['CENTRAL', db_AEGatewayService_name,etalon_bak_path,db_data_dir,db_log_dir]) | list) |list }}"
+  win_shell: (Get-Content -Path "{{ liw_services_distr_bak }}\{{ item.0.1 }}").replace('{{ item.1.0 }}','{{ item.1.1 }}') | Set-Content -Path "{{ liw_services_distr_bak }}\{{ item.0.1 }}"
+  loop: "{{ db_list | subelements('spec_sql', skip_missing=True) | product(replace_str_list | zip(value_str_list) | list) | list }}"
   tags: test
-
-
-- name: debug1
-  debug:
-    msg: "{{ item.1.0 }} ==== {{ item.1.1 }} ==== {{ item.0.1 }}"
-  loop: "{{ db_list | subelements('spec_sql', skip_missing=True) | product(replace_str_list | zip(['CENTRAL', db_AEGatewayService_name,etalon_bak_path,db_data_dir,db_log_dir]) | list) |list }}"
-  #tags: test
 
 - name: Copy files for liw services to IIS folder
   community.windows.win_robocopy:
     src: "{{ liw_services_distr }}\\{{ item.name }}\\"
     dest: "{{ item.install_dir }}"
     purge: true # Deletes files/directories in destination that don't exist in source after sync
-    flags: /MIR 
+    flags: /MIR
     recurse: true
   loop: "{{ liw_services_list }}"
-  #tags: test
+  tags: test
 
 - name: Set configs liw services
   community.windows.win_xml:
-     path: "{{ item.0.install_dir }}\\{{item.0.config_file}}"
-     xpath: "{{ item.1.xpath }}"
-     fragment: "{{ item.1.value | trim }}"
-     type: "{{ item.1.type }}"
-     attribute: "{{ item.1.attribute }}"
-     state: present
-     text: "{{ item.1.text }}"
-  loop: "{{ lookup('ansible.builtin.subelements', liw_services_list, 'config_change') }}"  
-  #tags: test   
+    path: "{{ item.0.install_dir }}\\{{item.0.config_file}}"
+    xpath: "{{ item.1.xpath }}"
+    fragment: "{{ item.1.value | trim }}"
+    type: "{{ item.1.type }}"
+    attribute: "{{ item.1.attribute }}"
+    state: present
+    text: "{{ item.1.text }}"
+  loop: "{{ lookup('ansible.builtin.subelements', liw_services_list, 'config_change') }}"
+  tags: test
 
 - name: Add web application
   win_shell: |
     New-WebApplication -Name {{ item.webapp_name }} -Site "{{ antor_ent_site }}" -PhysicalPath "{{ item.install_dir }}" -ApplicationPool "{{ antor_ent_site }}"
-  loop: "{{ liw_services_list }}"  
-  #tags: test
+  loop: "{{ liw_services_list }}"
+  tags: test
 
 - name: Test liw services
   shell: "{{ item.1 }}"
-  loop: "{{ liw_services_list | subelements('test_command') }}"  
+  loop: "{{ liw_services_list | subelements('test_command') }}"
   delegate_to: 127.0.0.1
   register: test_liw_services
   loop_control:
     label: "{{ item.1 }}"
-  #tags: test
+  tags: test
 
 - name: Display the results of the test loop
-  ansible.builtin.debug:    
+  ansible.builtin.debug:
     msg: "{{ item.cmd }} : \n\n {{ item.stdout }}"
   loop: "{{ test_liw_services.results }}"
   loop_control:
     label: "{{ item.cmd }}"
-  #tags: test  
+  tags: test
 
-# - name: Display the results of the test loop
-#   ansible.builtin.debug:    
-#     msg: "{{ item.1.cmd }}"    
-#   loop: "{{ query('ansible.builtin.subelements', liw_services_list, 'test_command', skip_missing=True) | zip(test_loop_output.results)}}"  
-  # tags: test  
+- name: Set fact component installed
+  set_fact:
+    liw_services_installed: true
+  tags: test

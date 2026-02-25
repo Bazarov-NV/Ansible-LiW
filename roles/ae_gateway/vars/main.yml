@@ -1,0 +1,13 @@
+#AEGatewayService
+AEGatewayService_exe: "AEGatewayService.exe"
+AEGatewayService_config: "AEGatewayService.exe.config"
+conn_str: >
+  metadata=res://*/AEGatewayDatabase.csdl|res://*/AEGatewayDatabase.ssdl|res://*/AEGatewayDatabase.msl;provider=System.Data.SqlClient;
+  provider connection string="data source={{sql_host}}\{{ sql_name }};
+  initial catalog={{ db_list | selectattr('name', 'equalto', 'AEGateway') | map(attribute='db_name') | first }};
+  integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+conn_str_iis: >
+  metadata=res://*/AEGateway.AEGatewayDatabase.csdl|res://*/AEGateway.AEGatewayDatabase.ssdl|res://*/AEGateway.AEGatewayDatabase.msl;
+  provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};
+  initial catalog={{ db_list | selectattr('name', 'equalto', 'AEGateway') | map(attribute='db_name') | first }};
+  integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"

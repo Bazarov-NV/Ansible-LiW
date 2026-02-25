@@ -144,17 +144,17 @@
         prompt: "Установить AEGatewayService? (да/нет)"
       register: user_confirmation_input1
       when: not all_install  and not silence_mode
-
+      tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-
+      tags: test
     - name: "Установка AEGatewayService"
       include_role:
         name: ae_gateway
       when: (all_install | bool) or (user_answer in yes_answer)
-
+      tags: test
     # Установка cервиса AEReportService
     - name: Prompt for AEReportsService install
       pause:
@@ -190,4 +190,42 @@
         name: liw_services
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode  and 'liw_services' in list_components )
+      tags: test
+
+    # Установка cервиса FuelCard
+    - name: Prompt for FuelCard install
+      pause:
+        prompt: "Установить FuleCard service? (да/нет)"
+      register: user_confirmation_input1
+      when: not all_install  and not silence_mode
+      tags: test
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
+      tags: test
+    - name: "Установка FuelCard service"
+      include_role:
+        name: fuel_card
+      when: (all_install | bool) or (user_answer in yes_answer)
+        or (silence_mode  and 'fuel_card' in list_components )
+      tags: test
+
+    # Установка cервиса PPSvc
+    - name: Prompt for PPSvc install
+      pause:
+        prompt: "Установить Point Processing Service? (да/нет)"
+      register: user_confirmation_input1
+      when: not all_install  and not silence_mode
+      tags: test
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_input1.user_input | lower }}"
+      when: user_confirmation_input1.user_input is defined
+      tags: test
+    - name: "Установка Point Processing Service service"
+      include_role:
+        name: ppsvc
+      when: (all_install | bool) or (user_answer in yes_answer)
+        or (silence_mode  and 'ppsvc' in list_components )
       tags: test

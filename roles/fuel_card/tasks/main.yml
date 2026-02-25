@@ -1,0 +1,119 @@
+- name: 7z FuelCard service on repo host
+  shell: 7z a -r ~/{{ repo_fc_7z }} {{ repo_fc_mnt }}/
+  delegate_to: 127.0.0.1
+  run_once: true
+  tags: test
+
+- name: Copy 7z FuelCard service to target host
+  win_copy:
+    src: "~/{{ repo_fc_7z }}"
+    dest: "{{ distr_folder_host }}\\{{ repo_fc_7z }}"
+  tags: test
+
+- name: Create folders
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ fc_folder }}"
+    - "{{ avalon_dir }}"
+  tags: test
+
+- name: Add share AVALON
+  win_share:
+    name: "{{ avalon_dir }}"
+    description: " Share {{ avalon_dir }}"
+    path: "{{ avalon_dir }}"
+    full: Everyone
+
+- name: Set rights folders
+  win_acl:
+    path: "{{ item }}"
+    user: "{{ user_antor }}"
+    rights: FullControl
+    state: present
+    type: allow
+  loop:
+    - "{{ fc_folder }}"
+    - "{{ avalon_dir }}"
+  tags: test
+
+- name: Extract FuelCard service
+  win_shell: 7z x "{{ distr_folder_host }}\\{{ repo_fc_7z }}" -o"{{ fc_folder }}" -aos -spe
+
+- name: Set Tmp dir in FuelCard config
+  community.windows.win_xml:
+    path: "{{ fc_folder }}\\{{ fc_config_file }}"
+    xpath: /configuration/appSettings[@key="TmpDir"]/value
+    fragment: "{{ avalon_dir }}\\"
+    type: text
+    state: present
+  tags: test
+
+- name: Set SQL ConnectionString CENTRAL in FuelCard config
+  community.windows.win_xml:
+    path: "{{ fc_folder }}\\{{ fc_config_file }}"
+    xpath: /configuration/connectionStrings/*[@name="ConnCentral"]
+    fragment: >
+      Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'CENTRAL') | map(attribute='db_name') | first  }};
+      Max Pool Size=200;Integrated Security=SSPI
+    type: attribute
+    attribute: "connectionString"
+    state: present
+  tags: test
+
+- name: Set SQL ConnectionString AEFuelCard in FuelCard config
+  community.windows.win_xml:
+    path: "{{ fc_folder }}\\{{ fc_config_file }}"
+    xpath: /configuration/connectionStrings/*[@name="ConnFuelCard"]
+    fragment: >
+      Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'AEFuelCard') | map(attribute='db_name') | first  }};
+      Max Pool Size=200;Integrated Security=SSPI
+    type: attribute
+    attribute: "connectionString"
+    state: present
+  tags: test
+
+- name: Grant domain account the "Log on as a service" user right
+  ansible.windows.win_user_right:
+    name: SeServiceLogonRight
+    users:
+      - "{{ host_name }}\\{{ user_antor }}"
+    action: add
+  tags: test
+
+- name: Set service AEFuelCard
+  win_service:
+    name: "{{ fuelcard_service_name }}"
+    display_name: "ANTOR FuelCard Processing Service"
+    description: "Provides fuel cards processing for ANTOR platforms"
+    path: "{{ fc_folder }}\\{{ fc_exe_file }}"
+    username: "{{ host_name }}\\{{ user_antor }}"
+    password: "{{ passw_user_antor }}"
+    start_mode: "delayed"
+    failure_actions:
+      - type: restart
+      - type: restart
+      - type: restart
+  tags: test
+
+- name: Change service AEFuelCard dependencies
+  win_service:
+    name: "{{ fuelcard_service_name }}"
+    dependencies: "{{ sql_service }}"
+  when: sql_host == host_name
+  tags: test
+
+- name: Start service AEFuelCard
+  win_service:
+    name: "{{ fuelcard_service_name }}"
+    state: started
+  register: rs2
+  tags: test
+
+- name: Reboot server after AEFuelCard
+  ansible.windows.win_reboot:
+
+- name: Set fact component installed
+  set_fact:
+    fuel_card_installed: true

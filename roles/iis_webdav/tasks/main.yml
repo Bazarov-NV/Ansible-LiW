@@ -1,5 +1,9 @@
 ---
 #Add ANTOR WebDAV
+- name: IIS install
+  include_role:
+    name: iis
+  when: not iis_installed
 
 - name: Create WebDav user
   ansible.windows.win_user:
@@ -159,3 +163,7 @@
 
 - name: Reboot server WebDav
   ansible.windows.win_reboot:
+
+- name: Set fact component installed
+  set_fact:
+    web_installed: true

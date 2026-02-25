@@ -1,0 +1,3 @@
+repo_ae_report_mnt: "{{ repo_folder_mnt }}/AEReportsService"
+aereportsservice_exe: "AEReportsService.exe"
+aereportsservice_config: "AEReportsService.exe.config"

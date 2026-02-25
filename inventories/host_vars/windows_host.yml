@@ -44,15 +44,19 @@ sql_passw: "6MbYCXm4NY95BFG6O4dB"
 sql_win_admin: "antor_admin"
 sql_service: "MSSQL$SQL2019"
 
+db_folder_host: "{{ disk_install }}\\{{ antor_root_folder }}\\DB"
+db_log_dir: "{{ db_folder_host }}\\Log"
+db_data_dir: "{{ db_folder_host }}\\Data"
+
 #silence mode
 silence_mode: false
-# install all enable components
+# install all enabled components
 all_install: false
 
 #list of components to install
-#if all_install=false, this list will ignore
+#if "all_install=true", this list will be ignored
 list_components:
-  #  - "preconfig"
+  - "preconfig"
   - "tools"
   - "iis"
   - "ae_site"
@@ -60,3 +64,20 @@ list_components:
   - "webdav"
   - "aegateway"
   - "aereports"
+  - "liw_services"
+  - "fuel_card"
+  - "ppsvc"
+
+preconfig_installed: false
+tools_installed: false
+iis_installed: false
+ae_site_installed: false
+ftp_installed: false
+webdav_installed: false
+aegateway_installed: false
+aereports_installed: false
+liw_services_installed: false
+fuel_card_installed: false
+ppsvc_installed: false
+antor_cert_installed: false
+sql_server_installed: false
