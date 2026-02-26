@@ -1,7 +1,7 @@
 - name: AE site install
   include_role:
     name: iis_ent_site
-  when: not ae_site_installed
+  when: not iis_ent_site_installed
 
 - name: Create AEGatewayService directories
   ansible.windows.win_file:

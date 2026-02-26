@@ -1,10 +1,10 @@
 - name: AE site install
   include_role:
     name: iis_ent_site
-  when: not ae_site_installed
+  when: not iis_ent_site_installed
 
 - name: 7z liw services and baks on repo host
-  shell: 7z a -r ~/{{ repo_liws_7z }} {{ db_loc_path }}/
+  shell: 7z a -r ~/{{ repo_liws_7z }} {{ repo_liw_services_mnt }}/
   register: q1
   delegate_to: 127.0.0.1
   run_once: true
@@ -78,7 +78,7 @@
   community.windows.win_robocopy:
     src: "{{ liw_services_distr }}\\{{ item.name }}\\"
     dest: "{{ item.install_dir }}"
-    purge: true # Deletes files/directories in destination that don't exist in source after sync
+    purge: true 
     flags: /MIR
     recurse: true
   loop: "{{ liw_services_list }}"

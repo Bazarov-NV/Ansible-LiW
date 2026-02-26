@@ -13,3 +13,4 @@ collections/ansible_collections
 .DS_Store
 .python-version
 .ruff_cache
+.docx

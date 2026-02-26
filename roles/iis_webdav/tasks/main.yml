@@ -69,6 +69,7 @@
 - name: Install ANTOR certificates
   include_role:
     name: antor_cert
+  when: not antor_cert_installed  
   tags: test
 
 - name: Obtain information certificate

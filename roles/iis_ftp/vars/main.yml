@@ -1,0 +1,16 @@
+#ftp
+ftp_allow_list:
+  - ip_address: "195.239.86.110"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "94.79.3.178"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "109.95.211.244"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "79.134.204.150"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "195.19.176.118"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "31.28.31.48"
+    subnet_mask: "255.255.255.255"
+  - ip_address: "192.168.0.0"
+    subnet_mask: "255.255.0.0"

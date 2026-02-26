@@ -2,13 +2,13 @@
   shell: 7z a -r ~/{{ repo_fc_7z }} {{ repo_fc_mnt }}/
   delegate_to: 127.0.0.1
   run_once: true
-  tags: test
+  #tags: test
 
 - name: Copy 7z FuelCard service to target host
   win_copy:
     src: "~/{{ repo_fc_7z }}"
     dest: "{{ distr_folder_host }}\\{{ repo_fc_7z }}"
-  tags: test
+  #tags: test
 
 - name: Create folders
   ansible.windows.win_file:
@@ -17,7 +17,7 @@
   loop:
     - "{{ fc_folder }}"
     - "{{ avalon_dir }}"
-  tags: test
+  #tags: test
 
 - name: Add share AVALON
   win_share:
@@ -25,6 +25,7 @@
     description: " Share {{ avalon_dir }}"
     path: "{{ avalon_dir }}"
     full: Everyone
+  #tags: test  
 
 - name: Set rights folders
   win_acl:
@@ -36,27 +37,33 @@
   loop:
     - "{{ fc_folder }}"
     - "{{ avalon_dir }}"
-  tags: test
+  #tags: test
 
 - name: Extract FuelCard service
   win_shell: 7z x "{{ distr_folder_host }}\\{{ repo_fc_7z }}" -o"{{ fc_folder }}" -aos -spe
+  #tags: test
 
 - name: Set Tmp dir in FuelCard config
   community.windows.win_xml:
     path: "{{ fc_folder }}\\{{ fc_config_file }}"
-    xpath: /configuration/appSettings[@key="TmpDir"]/value
+    xpath: /configuration/appSettings/*[@key="TmpDir"]
     fragment: "{{ avalon_dir }}\\"
-    type: text
+    type: attribute
+    attribute: "value"
     state: present
+  register: r1  
   tags: test
+
+- name: debug1
+  debug: 
+    var: r1    
+  tags: test  
 
 - name: Set SQL ConnectionString CENTRAL in FuelCard config
   community.windows.win_xml:
     path: "{{ fc_folder }}\\{{ fc_config_file }}"
     xpath: /configuration/connectionStrings/*[@name="ConnCentral"]
-    fragment: >
-      Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'CENTRAL') | map(attribute='db_name') | first  }};
-      Max Pool Size=200;Integrated Security=SSPI
+    fragment: Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'CENTRAL') | map(attribute='db_name') | first  }}; Max Pool Size=200;Integrated Security=SSPI
     type: attribute
     attribute: "connectionString"
     state: present
@@ -66,9 +73,7 @@
   community.windows.win_xml:
     path: "{{ fc_folder }}\\{{ fc_config_file }}"
     xpath: /configuration/connectionStrings/*[@name="ConnFuelCard"]
-    fragment: >
-      Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'AEFuelCard') | map(attribute='db_name') | first  }};
-      Max Pool Size=200;Integrated Security=SSPI
+    fragment: Data Source={{ sql_host }}\{{ sql_name }};Initial Catalog={{ db_list | selectattr('name', 'equalto', 'AEFuelCard') | map(attribute='db_name') | first  }}; Max Pool Size=200;Integrated Security=SSPI
     type: attribute
     attribute: "connectionString"
     state: present
@@ -112,8 +117,9 @@
   tags: test
 
 - name: Reboot server after AEFuelCard
-  ansible.windows.win_reboot:
+  ansible.windows.win_reboot:  
 
 - name: Set fact component installed
   set_fact:
     fuel_card_installed: true
+  tags: test  

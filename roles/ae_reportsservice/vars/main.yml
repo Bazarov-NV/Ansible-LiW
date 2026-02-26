@@ -1,3 +1,5 @@
 repo_ae_report_mnt: "{{ repo_folder_mnt }}/AEReportsService"
+AEReportsService_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\AEReportsService"
 aereportsservice_exe: "AEReportsService.exe"
 aereportsservice_config: "AEReportsService.exe.config"
+file_7z_ae_report_loc: "ae_report_service.7z"

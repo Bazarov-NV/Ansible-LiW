@@ -1,4 +1,15 @@
 ---
+# Основной скрипт для запуска всей установки LiW
+# пример запуска:
+# ansible-playbook -i ./inventories/hosts.ini all.yml --tags test
+# ,где
+#     "-i" - опция длф указания пути к файлу с описанием хостов - ./inventories/hosts.ini 
+#     "all.yml" - названия этого основного файл-скрипта
+#      "--tags test" - указываем, что отработают только задачи в скриптах, имеющие в описании тег "test"
+#
+#
+# Далее набор задач для работы с виртуалкой. Виртуалки Используется пока только для тестирования работы скриптов по установке LiW
+# эти задачи выполняются на группе хостов [workhosts] из host.ini
 - name: Prepare the VM on the test server
   hosts: workhosts
   gather_facts: false
@@ -6,48 +17,127 @@
     # Имя виртуалки для теста
     vm_name: win2k19-liw-test
     # Имя snapshot для отката виртуалки в исходное состояние
-    vm_snapshot: snapshot1
-
+    vm_snapshot: snapshot1  
+    vm_revert1: false
+    yes_answer:
+      - "да"
+      - "yes"
+      - "д"
+      - "y"
+    no_answer:
+      - "нет"
+      - "no"
+      - "н"
+      - "n"
+    user_answer: ""
   tasks:
-    - name: Prompt for revert VM to source snpashot
+    - name: Prompt for revert VM to source snapshot
       ansible.builtin.pause:
-        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет)"
+        prompt: "Откатить {{ vm_name }} к исходному снимку {{ vm_snapshot }}? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
+      until: ( user_confirmation_vm.user_input | lower in yes_answer) or (user_confirmation_vm.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0  
       register: user_confirmation_vm
+      when: not vm_revert1 and not silence_mode
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_vm.user_input | lower }}"
+      when: user_confirmation_vm.user_input is defined
 
     - name: Revert VM to snapshot and start
       shell: |
         virsh snapshot-revert {{ vm_name }} {{ vm_snapshot }} --running --force
       become: true
-      when: user_confirmation_vm.user_input | lower in yes_answer
+      when: (user_answer in yes_answer) or (vm_revert1 | bool and silence_mode | bool)
 
-    - name: Prompt for revert VM to source snpashot 2
+    - name: Prompt for revert VM to source snapshot 2
       ansible.builtin.pause:
-        prompt: "Откатить {{ vm_name }} к снимку {{ vm_snapshot_2 }}? (да/нет)"
+        prompt: "Откатить {{ vm_name }} к снимку {{ vm_snapshot_2 }}? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
+      until: ( user_confirmation_vm.user_input | lower in yes_answer) or (user_confirmation_vm.user_input | lower in no_answer)
+      retries: 100
+      delay: 0  
       register: user_confirmation_vm
+      when: not silence_mode
+
+    - name: Set answer
+      set_fact:
+        user_answer: "{{ user_confirmation_vm.user_input | lower }}"
+      when: user_confirmation_vm.user_input is defined
 
     - name: Revert VM to snapshot and start
       shell: |
         virsh snapshot-revert {{ vm_name }} {{ vm_snapshot_2 }} --running --force
       become: true
-      when: user_confirmation_vm.user_input | lower in yes_answer
+      when: (user_answer in yes_answer) and not silence_mode
+
+# Далее идет работа основного скрипта по установке LiW
+# 
+# Все задачи по установке отдельных компонент сгруппированы по "ролям" ansible
+# Какие компоненты LiW ставить на сервере выбирает пользователь, запустивший этот скрипт, если переменная silence_mode = false (т.е. тихая установка, без вопросов)
+# Если переменная silence_mode = truе и all_install = truе, то будут без воросов установлены все возможные компоненты LiW
+#   если же silence_mode = true и all_install = false, то будут установлены только компоненты LiW, указанные в переменной хоста, в списке: list_components
+#  
+# Установка компонент идет посредством включения задач соответствующей "роли" ansible
+# Задачи выполняются на группе хостов: [liwws2019]
+#
+#
 
 - name: Install LiW
   hosts: liwws2019
   gather_facts: false
+  vars:
+    yes_answer:
+      - "да"
+      - "yes"
+      - "д"
+      - "y"
+    no_answer:
+      - "нет"
+      - "no"
+      - "н"
+      - "n"
+    user_answer: "" 
 
   tasks:
+    #Проверка наличия MS SQL Server по заданными переменным хоста
+    - name: Check MS SQL Server
+      ansible.windows.win_powershell:
+        script: |
+          $connString = "Server='{{ sql_host }}\{{ sql_name }}';Database='master';Integrated Security=True;"
+          try {
+            $version = (Invoke-SqlCmd -ConnectionString $connString -Query "SELECT SERVERPROPERTY('ProductVersion') AS ProductVersion" -ErrorAction Stop).ProductVersion.ToString()
+            Write-Output "SQL Server is installed, version: $version"
+          } catch {
+            Write-Output "SQL Server is not installed or connection failed."
+            exit 1
+          }
+      register: sql_version_result
+      # Use `failed_when` if you want the task to fail when SQL Server isn't found
+      #failed_when: "'SQL Server is not installed' in sql_version_result.output"    
+    - name: Set SQL_installed var
+      set_fact:
+        sql_server_installed: true
+      when: 
+        ('SQL Server is installed, version' in sql_version_result.output[0])  
+    - name: MS SQL Server absent
+      pause:
+        prompt: "Отсутствует или нет соединения c MS SQL Server: {{ sql_host }}\\{{ sql_name }}"
+      when: not sql_server_installed  
+
     # Подготовка сервера
     - name: Prompt for preconfig
       pause:
-        prompt: "Выполнить подготовку сервера? (да/нет)"
+        prompt: "Выполнить подготовку сервера? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
-      when: not all_install  and not silence_mode
-
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0
+      when: not all_install and not silence_mode
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-
     - name: "Подготовка сервера"
       include_role:
         name: preconfig
@@ -57,146 +147,173 @@
     # Установка утилит для АНТОР админа сервера
     - name: Prompt for tools install
       pause:
-        prompt: "Установить утилиты для администрирования сервера? (да/нет)"
+        prompt: "Установить утилиты для администрирования сервера? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install and not silence_mode
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-
     - name: "Установка утилит"
       include_role:
         name: tools
       when: (all_install | bool) or (user_answer in yes_answer)
+        or (silence_mode and 'tools' in list_components )
 
     # Установка роли IIS на сервере
     - name: Prompt for iis install
       pause:
-        prompt: "Установить IIS? (да/нет)"
+        prompt: "Установить IIS? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install  and not silence_mode
-
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-
     - name: "Установка IIS"
       include_role:
         name: iis
       when: (all_install | bool) or (user_answer in yes_answer)
+        or (silence_mode and 'iis' in list_components )
 
     # Установка сайта АНТОР Enterprise
     - name: Prompt for ae-site install
       pause:
-        prompt: "Установить AMTOR Enterprise site? (да/нет)"
+        prompt: "Установить AMTOR Enterprise site? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install  and not silence_mode
-
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-
     - name: "Установка сайта ANTOR Enterprise"
       include_role:
         name: iis_ent_site
       when: (all_install | bool) or (user_answer in yes_answer)
+        or (silence_mode and 'iis_ent_site' in list_components )
 
     # Установка FTP
     - name: Prompt for FTP install
       pause:
-        prompt: "Установить ANTOR FTP? (да/нет)"
+        prompt: "Установить ANTOR FTP? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
-      when: not all_install  and not silence_mode
-
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
+      when: not all_install  and not silence_mode      
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-
     - name: "Установка ANTOR FTP"
       include_role:
         name: iis_ftp
       when: (all_install | bool) or (user_answer in yes_answer)
+        or (silence_mode and 'iis_ftp' in list_components )
 
     # Установка WedDav
     - name: Prompt for WebDav install
       pause:
-        prompt: "Установить WebDav? (да/нет)"
+        prompt: "Установить WebDav? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install and not silence_mode
-
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
-      when: user_confirmation_input1.user_input is defined
-
+      when: user_confirmation_input1.user_input is defined        
     - name: "Установка WebDav"
       include_role:
         name: iis_webdav
       when: (all_install | bool) or (user_answer in yes_answer)
+        or (silence_mode and 'iis_webdav' in list_components )
+      
 
     # Установка cервиса AEGatewayService
     - name: Prompt for AEGatewayService install
       pause:
-        prompt: "Установить AEGatewayService? (да/нет)"
+        prompt: "Установить AEGatewayService? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install  and not silence_mode
-      tags: test
+      #tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-      tags: test
+      #tags: test
     - name: "Установка AEGatewayService"
       include_role:
         name: ae_gateway
       when: (all_install | bool) or (user_answer in yes_answer)
-      tags: test
+        or (silence_mode and 'ae_gateway' in list_components )
+      #tags: test
+
     # Установка cервиса AEReportService
     - name: Prompt for AEReportsService install
       pause:
-        prompt: "Установить AEReportsService? (да/нет)"
+        prompt: "Установить AEReportsService? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install  and not silence_mode
-
+      tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-
+      tags: test
     - name: "Установка AEReportsService"
       include_role:
         name: ae_reportsservice
       when: (all_install | bool) or (user_answer in yes_answer)
-        or (silence_mode  and 'aereports' in list_components )
+        or (silence_mode  and 'ae_reportsservice' in list_components )
+      tags: test  
 
     # Установка основных cервисов LIW
     - name: Prompt for liw_services install
       pause:
-        prompt: "Установить LIW services? (да/нет)"
+        prompt: "Установить LIW services? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install  and not silence_mode
-      tags: test
+      #tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-      tags: test
+      #tags: test
     - name: "Установка LIW services"
       include_role:
         name: liw_services
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode  and 'liw_services' in list_components )
-      tags: test
+      #tags: test
 
     # Установка cервиса FuelCard
     - name: Prompt for FuelCard install
       pause:
-        prompt: "Установить FuleCard service? (да/нет)"
+        prompt: "Установить FuleCard service? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install  and not silence_mode
       tags: test
     - name: Set answer
@@ -214,8 +331,11 @@
     # Установка cервиса PPSvc
     - name: Prompt for PPSvc install
       pause:
-        prompt: "Установить Point Processing Service? (да/нет)"
+        prompt: "Установить Point Processing Service? (да/нет) (Ctrl+C затем 'A' - остановить выполнение скрипта)"
       register: user_confirmation_input1
+      until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
+      retries: 100
+      delay: 0      
       when: not all_install  and not silence_mode
       tags: test
     - name: Set answer

@@ -39,6 +39,7 @@
 - name: "Установка сертификатов АНТОР"
   include_role:
     name: antor_cert
+  when: not antor_cert_installed  
 
 - name: Obtain information certificate
   win_shell: |
@@ -118,4 +119,4 @@
 
 - name: Set fact component installed
   set_fact:
-    ae_site_installed: true
+    iis_ent_site_installed: true

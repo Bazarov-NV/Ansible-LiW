@@ -1,4 +1,5 @@
 #AEGatewayService
+AEGatewayService_folder: "{{ disk_install }}\\{{ antor_root_folder }}\\AEGatewayService"
 AEGatewayService_exe: "AEGatewayService.exe"
 AEGatewayService_config: "AEGatewayService.exe.config"
 conn_str: >
@@ -11,3 +12,4 @@ conn_str_iis: >
   provider=System.Data.SqlClient;provider connection string="data source={{sql_host}}\{{ sql_name }};
   initial catalog={{ db_list | selectattr('name', 'equalto', 'AEGateway') | map(attribute='db_name') | first }};
   integrated security=SSPI;multipleactiveresultsets=True;App=EntityFramework"
+repo_AEGatewayService_file: "AEGatewayService.7z"  
