@@ -1,5 +1,5 @@
 - name: 7z FuelCard service on repo host
-  shell: 7z a -r ~/{{ repo_fc_7z }} {{ repo_fc_mnt }}/
+  shell: 7z a -r -up1q1r2x1y1z1w1 ~/{{ repo_fc_7z }} {{ repo_fc_mnt }}/
   delegate_to: 127.0.0.1
   run_once: true
   #tags: test

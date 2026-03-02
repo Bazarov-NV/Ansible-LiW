@@ -102,28 +102,32 @@
   tasks:
     #Проверка наличия MS SQL Server по заданными переменным хоста
     - name: Check MS SQL Server
-      ansible.windows.win_powershell:
-        script: |
-          $connString = "Server='{{ sql_host }}\{{ sql_name }}';Database='master';Integrated Security=True;"
-          try {
-            $version = (Invoke-SqlCmd -ConnectionString $connString -Query "SELECT SERVERPROPERTY('ProductVersion') AS ProductVersion" -ErrorAction Stop).ProductVersion.ToString()
-            Write-Output "SQL Server is installed, version: $version"
-          } catch {
-            Write-Output "SQL Server is not installed or connection failed."
-            exit 1
-          }
+      win_shell: |
+        $connString = "Server='{{ sql_host }}\{{ sql_name }}';Database='master';Integrated Security=True;"
+        try {
+          $version = (Invoke-SqlCmd -ConnectionString $connString -Query "SELECT SERVERPROPERTY('ProductVersion') AS ProductVersion" -ErrorAction Stop).ProductVersion.ToString()
+          Write-Output "SQL Server is installed, version: $version"
+        } catch {
+          Write-Output "SQL Server is not installed or connection failed."
+          exit 1
+        }
       register: sql_version_result
       # Use `failed_when` if you want the task to fail when SQL Server isn't found
-      #failed_when: "'SQL Server is not installed' in sql_version_result.output"    
+      #failed_when: "'SQL Server is not installed' in sql_version_result.output"
+    - name: debug1
+      debug:
+        var: sql_version_result
+
+                 
     - name: Set SQL_installed var
       set_fact:
         sql_server_installed: true
       when: 
-        ('SQL Server is installed, version' in sql_version_result.output[0])  
+        ('SQL Server is installed, version' in sql_version_result.stdout)  
     - name: MS SQL Server absent
-      pause:
-        prompt: "Отсутствует или нет соединения c MS SQL Server: {{ sql_host }}\\{{ sql_name }}"
-      when: not sql_server_installed  
+      fail:
+        msg: "Отсутствует или нет соединения c MS SQL Server: {{ sql_host }}\\{{ sql_name }}"
+      when: not sql_server_installed 
 
     # Подготовка сервера
     - name: Prompt for preconfig

@@ -18,5 +18,8 @@
 #sudo apt update
 #sudo apt install openssh-server
 
+# install 7z
+# sudo apt install 7zip
+
 # Требуется предварительно зайти вручную по ssh на target host, чтобы 
 # прописался host key 

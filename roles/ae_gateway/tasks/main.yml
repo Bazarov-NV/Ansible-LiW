@@ -200,7 +200,7 @@
 - name: Add web application
   win_shell: >
     New-WebApplication -Name {{ AE_site_app_name }} -Site "{{ antor_ent_site }}" -PhysicalPath "{{ iis_folder }}\{{ AE_site_app_name }}"
-    -ApplicationPool "{{ antor_ent_site }}"
+    -ApplicationPool "{{ antor_ent_site }}" -Force
   tags: test
 
 - name: Reboot server after AEGatewayService

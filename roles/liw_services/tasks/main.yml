@@ -4,7 +4,7 @@
   when: not iis_ent_site_installed
 
 - name: 7z liw services and baks on repo host
-  shell: 7z a -r ~/{{ repo_liws_7z }} {{ repo_liw_services_mnt }}/
+  shell: 7z a -r -up1q1r2x1y1z1w1 ~/{{ repo_liws_7z }} {{ repo_liw_services_mnt }}/
   register: q1
   delegate_to: 127.0.0.1
   run_once: true
@@ -99,7 +99,9 @@
 - name: Add web application
   win_shell: |
     New-WebApplication -Name {{ item.webapp_name }} -Site "{{ antor_ent_site }}" -PhysicalPath "{{ item.install_dir }}" -ApplicationPool "{{ antor_ent_site }}"
+  register: r1  
   loop: "{{ liw_services_list }}"
+  failed_when: r1.rc != 0 and 'Destination element already exists' not in r1.stderr
   tags: test
 
 - name: Test liw services

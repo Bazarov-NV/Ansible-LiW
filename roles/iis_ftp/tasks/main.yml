@@ -16,11 +16,22 @@
     path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
     state: directory
 
-- name: Create the IIS FTP site
-  microsoft.iis.website:
-    name: "{{ ftp_site_name }}"
-    physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
-    state: stopped
+- name: Create the FTP site using PowerShell (New-WebFtpSite)
+  win_shell: |
+    Import-Module WebAdministration
+    # Check if the FTP site already exists to make the task idempotent
+    if (-not (Get-WebSite -Name "{{ ftp_site_name }}" -ErrorAction SilentlyContinue)) {
+       New-WebFtpSite -Name "{{ ftp_site_name }}" -Port {{ ftp_port }} -PhysicalPath "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
+    } else {
+       Write-Output "FTP site {{ ftp_site_name }} already exists, skipping creation."
+    }
+
+
+# - name: Create the IIS FTP site
+#   microsoft.iis.website:
+#     name: "{{ ftp_site_name }}"
+#     physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
+#     state: stopped
 
 - name: Add dd bindings to FTP site
   win_iis_webbinding:
