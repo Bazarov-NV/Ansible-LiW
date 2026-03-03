@@ -21,11 +21,15 @@
 - name: Extract utils
   win_shell: 7z x "{{ distr_folder_host }}\\{{ item.zip_name }}" -o"{{ item.path }}" -aoa
   loop: "{{ tools_list }}"
+  loop_control:
+    label: "{{ item.zip_name }}"  
   when: item.zip_name | length > 0
 
 - name: Install utils
   win_shell: "{{ item.install_script }}"
   loop: "{{ tools_list }}"
+  loop_control:
+    label: "{{ item.tool_name }} --- {{ item.install_script }}"
   when: item.install
 
 - name: Create an application shortcut on the desktop
@@ -34,6 +38,8 @@
     dest: C:\Users\{{ user_adm_antor }}\Desktop\{{ item.tool_name }}.lnk
     icon: "{{ item.icon_path}},0"
   loop: "{{ tools_list }}"
+  loop_control:
+    label: "{{ item.path }}\\{{ item.exe_name }}"
   when: item.shortcut
 
 - name: Create scheduled task "Background info"

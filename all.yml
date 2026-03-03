@@ -19,6 +19,7 @@
     # Имя snapshot для отката виртуалки в исходное состояние
     vm_snapshot: snapshot1  
     vm_revert1: false
+    vm_revert2: false
     yes_answer:
       - "да"
       - "yes"
@@ -38,7 +39,7 @@
       retries: 100
       delay: 0  
       register: user_confirmation_vm
-      when: not vm_revert1 and not silence_mode
+      when: vm_revert1 | bool and not silence_mode
 
     - name: Set answer
       set_fact:
@@ -50,6 +51,9 @@
         virsh snapshot-revert {{ vm_name }} {{ vm_snapshot }} --running --force
       become: true
       when: (user_answer in yes_answer) or (vm_revert1 | bool and silence_mode | bool)
+    - name: Clear answer
+      set_fact:
+        user_answer: ""      
 
     - name: Prompt for revert VM to source snapshot 2
       ansible.builtin.pause:
@@ -58,7 +62,7 @@
       retries: 100
       delay: 0  
       register: user_confirmation_vm
-      when: not silence_mode
+      when: vm_revert2 | bool and not silence_mode
 
     - name: Set answer
       set_fact:
@@ -69,7 +73,10 @@
       shell: |
         virsh snapshot-revert {{ vm_name }} {{ vm_snapshot_2 }} --running --force
       become: true
-      when: (user_answer in yes_answer) and not silence_mode
+      when: (user_answer in yes_answer) or (vm_revert2 | bool and silence_mode | bool)
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
 
 # Далее идет работа основного скрипта по установке LiW
 # 
@@ -82,7 +89,6 @@
 # Задачи выполняются на группе хостов: [liwws2019]
 #
 #
-
 - name: Install LiW
   hosts: liwws2019
   gather_facts: false
@@ -98,10 +104,112 @@
       - "н"
       - "n"
     user_answer: "" 
-
   tasks:
-    #Проверка наличия MS SQL Server по заданными переменным хоста
-    - name: Check MS SQL Server
+    # Далее несколько модулей подготовки Ansible хоста   
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: yes
+      delegate_to: 127.0.0.1
+      become: true  
+    # Установка необходимых пакетов для передачи дистрибутива LiW через Ansible хост
+    # 
+    - name: Install packages on Ansible host
+      ansible.builtin.apt:
+        name: "{{ item }}"
+        state: present
+      delegate_to: 127.0.0.1
+      become: true
+      loop:
+       - "openssh-server"
+       - "nfs-common"
+       - "cifs-utils"
+       - "7zip"
+    # Проверка наличия директории для точки монтирования папки Релизов с сервера АНТОР "server" на машине с Ansible
+    - name: Create application data directory with specific permissions
+      ansible.builtin.file:
+        path: "{{ repo_folder_mnt }}"
+        state: directory
+        owner: "root"
+        group: "root"
+        mode: "0644"
+      become: true  
+      delegate_to: 127.0.0.1  
+    # Проверка наличия монтирования папки Релизов с сервера АНТОР "server" на машине с Ansible
+    - name: check mount repo
+      shell: mountpoint '{{ repo_folder_mnt }}'
+      become: true           
+      register: rq1
+      delegate_to: 127.0.0.1
+      run_once: true
+      ignore_errors: true
+      no_log: true
+      failed_when: false
+    # Модуль монтирования папки Релизов с сервера АНТОР "server" на машине с Ansible 
+    - name: mount repo
+      shell: sudo mount -t cifs '{{ repo_folder }}' {{ repo_folder_mnt }} -o username={{ repo_mnt_user }},password={{ repo_mnt_user_pwd }},domain=ANTOR.msk
+      become: true           
+      register: q1
+      delegate_to: 127.0.0.1
+      run_once: true
+      when: rq1.rc == 32
+
+    # Проверка наличия сертификатов АНТОР
+    - name: Obtain information root certificate "{{ root_cert_subj_name }}"
+      win_shell: |
+        $cert = Get-ChildItem cert:\LocalMachine\Root | Where-Object { $_.Subject -eq "{{ root_cert_subj_name }}" } | Select-Object -Last 1
+        if ($cert) {
+        Write-Output $cert.Thumbprint
+        } else {        
+        Write-Output "Certificate not found"
+        }
+      register: cert_hash_result1
+      ignore_errors: true
+      no_log: true
+      failed_when: false
+    - name: Obtain information certificate "{{ cert_subj_name }}"
+      win_shell: |
+        $cert = Get-ChildItem cert:\LocalMachine\My | Where-Object { $_.Subject -eq "{{ cert_subj_name }}" } | Select-Object -Last 1
+        if ($cert) {
+         Write-Output $cert.Thumbprint
+        } else {       
+        Write-Output "Certificate not found"
+        }
+      register: cert_hash_result2
+      ignore_errors: true
+      no_log: true
+      failed_when: false
+    - name: Set fact certificates installed
+      set_fact:
+         antor_cert_installed: true
+      when: cert_hash_result1.stdout_lines[0] != "Certificate not found" and cert_hash_result2.stdout_lines[0] != "Certificate not found"
+    # Проверка наличия основноого сайта  
+    - name: Return information about site "{{ antor_ent_site }}"
+      win_shell: |
+        Import-Module WebAdministration        
+        if (-not (Get-WebSite -Name "{{ antor_ent_site }}" -ErrorAction SilentlyContinue)) {
+          Write-Output "Site {{ antor_ent_site }} not exists"
+        } else {
+           Write-Output "Site {{ antor_ent_site }} exists"
+        }    
+      register: website_info_result
+      ignore_errors: true
+      no_log: true
+      failed_when: false
+    - name: d1
+      debug: 
+        var: website_info_result
+    - name: p1
+      pause:
+    - name: Set fact iis installed
+      set_fact:
+        iis_installed: true
+      when: "'Site {{ antor_ent_site }} exists' in website_info_result.stdout"
+    - name: d1
+      debug: 
+        var: iis_installed
+
+    # Проверка наличия MS SQL Server по заданными переменным хоста
+    - name: Check MS SQL Server "{{ sql_host }}\{{ sql_name }}"
       win_shell: |
         $connString = "Server='{{ sql_host }}\{{ sql_name }}';Database='master';Integrated Security=True;"
         try {
@@ -111,14 +219,7 @@
           Write-Output "SQL Server is not installed or connection failed."
           exit 1
         }
-      register: sql_version_result
-      # Use `failed_when` if you want the task to fail when SQL Server isn't found
-      #failed_when: "'SQL Server is not installed' in sql_version_result.output"
-    - name: debug1
-      debug:
-        var: sql_version_result
-
-                 
+      register: sql_version_result            
     - name: Set SQL_installed var
       set_fact:
         sql_server_installed: true
@@ -137,7 +238,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0
-      when: not all_install and not silence_mode
+      when: not all_install and not silence_mode and 'preconfig' in list_components
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
@@ -147,6 +248,9 @@
         name: preconfig
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'preconfig' in list_components )
+    - name: Clear answer
+      set_fact:
+        user_answer: ""        
 
     # Установка утилит для АНТОР админа сервера
     - name: Prompt for tools install
@@ -156,7 +260,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install and not silence_mode
+      when: not all_install and not silence_mode and 'tools' in list_components
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
@@ -166,6 +270,9 @@
         name: tools
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'tools' in list_components )
+    - name: Clear answer
+      set_fact:
+        user_answer: ""        
 
     # Установка роли IIS на сервере
     - name: Prompt for iis install
@@ -175,7 +282,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode
+      when: not all_install and not silence_mode and 'iis' in list_components
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
@@ -185,6 +292,9 @@
         name: iis
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'iis' in list_components )
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
 
     # Установка сайта АНТОР Enterprise
     - name: Prompt for ae-site install
@@ -194,7 +304,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode
+      when: not all_install and not silence_mode and 'iis_ent_site' in list_components
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
@@ -204,6 +314,10 @@
         name: iis_ent_site
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'iis_ent_site' in list_components )
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
+
 
     # Установка FTP
     - name: Prompt for FTP install
@@ -213,7 +327,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode      
+      when: not all_install and not silence_mode and 'iis_ftp' in list_components   
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
@@ -223,6 +337,10 @@
         name: iis_ftp
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'iis_ftp' in list_components )
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
+
 
     # Установка WedDav
     - name: Prompt for WebDav install
@@ -232,7 +350,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install and not silence_mode
+      when: not all_install and not silence_mode and 'iis_webdav' in list_components
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
@@ -242,6 +360,10 @@
         name: iis_webdav
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'iis_webdav' in list_components )
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
+
       
 
     # Установка cервиса AEGatewayService
@@ -252,7 +374,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode
+      when: not all_install and not silence_mode and 'ae_gateway' in list_components
       #tags: test
     - name: Set answer
       set_fact:
@@ -265,6 +387,10 @@
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'ae_gateway' in list_components )
       #tags: test
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
+
 
     # Установка cервиса AEReportService
     - name: Prompt for AEReportsService install
@@ -274,7 +400,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode
+      when: not all_install and not silence_mode and 'ae_reportsservice' in list_components
       tags: test
     - name: Set answer
       set_fact:
@@ -285,8 +411,12 @@
       include_role:
         name: ae_reportsservice
       when: (all_install | bool) or (user_answer in yes_answer)
-        or (silence_mode  and 'ae_reportsservice' in list_components )
+        or (silence_mode and 'ae_reportsservice' in list_components )
       tags: test  
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
+
 
     # Установка основных cервисов LIW
     - name: Prompt for liw_services install
@@ -296,7 +426,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode
+      when: not all_install and not silence_mode and 'liw_services' in list_components
       #tags: test
     - name: Set answer
       set_fact:
@@ -307,8 +437,12 @@
       include_role:
         name: liw_services
       when: (all_install | bool) or (user_answer in yes_answer)
-        or (silence_mode  and 'liw_services' in list_components )
+        or (silence_mode and 'liw_services' in list_components )
       #tags: test
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
+
 
     # Установка cервиса FuelCard
     - name: Prompt for FuelCard install
@@ -318,7 +452,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode
+      when: not all_install and not silence_mode and 'fuel_card' in list_components
       tags: test
     - name: Set answer
       set_fact:
@@ -329,8 +463,12 @@
       include_role:
         name: fuel_card
       when: (all_install | bool) or (user_answer in yes_answer)
-        or (silence_mode  and 'fuel_card' in list_components )
+        or (silence_mode and 'fuel_card' in list_components )
       tags: test
+    - name: Clear answer
+      set_fact:
+        user_answer: ""
+
 
     # Установка cервиса PPSvc
     - name: Prompt for PPSvc install
@@ -340,7 +478,7 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install  and not silence_mode
+      when: not all_install and not silence_mode and 'ppsvc' in list_components
       tags: test
     - name: Set answer
       set_fact:

@@ -3,16 +3,24 @@ silence_mode: false
 
 #Расположение дистрибутивов
 # Папка дистрибутива LiW на внутреннем сервере АНТОР
-repo_folder: "\\\\server\\антор\\Отдел Внедрения\\Релизы\\LogistinWeb\\Repo"
-# Внешняя папка дистрибутива LiW на внутреннем сервере АНТОР
-repo_folder_ext: "\\\\tsclient\\V\\Релизы\\LogistinWeb\\Repo"
+repo_folder: "//server.ANTOR.msk/антор/Отдел Внедрения/Релизы/LogistinWeb/Repo"
+# Папка дистрибутива LiW на хосте
 distr_folder_host: "{{ disk_install }}\\{{ antor_root_folder }}\\distr"
-# ftp server c дистрибутивом LiW
+# ftp server c дистрибутивом LiW, для варианта копирования дистрибутива LiW с FTP
 ftp_server_repo: "ftp://ans_distr:4M3nONDY2u@192.168.3.4"
 ftp_folder_repo: "LiW_repo"
-# Примонтированная папка Релизов с сервера АНТОР server на машине с Ansible
+# Примонтированная папка Релизов с сервера АНТОР "server" на машине с Ansible
+# для вариант копирования дистрибутива LiW через машину с Ansible
 repo_folder_mnt: "/mnt/server_antor"
-
+# Пользователь м пароль для монтирования папки Релизов с сервера АНТОР "server" на машине с Ansible
+repo_mnt_user: "nbaz"
+repo_mnt_user_pwd: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          37383239666265623138346430326133373562373366636631363638303730613530313230626235
+          6430613964373832393632656535643263626539393730330a356361306638623161663365316131
+          30626637656131353736343337666261343463366330643762626263316666326439303639396137
+          6431373738663236660a386466393637663037373336653237303636613861353437663937346138
+          6330
 
 #tools
 #Папка утилит LiW на внутреннем сервере АНТОР
@@ -29,6 +37,7 @@ ftp_site_name: "ANTOR FTP"
 #Certificates
 cert_name: "ANTOR Enterprise Server"
 cert_subj_name: "CN=ANTOR Enterprise Server"
+root_cert_subj_name: "CN=ANTOR Enterprise Root Authority"
 
 #AEGatewayService
 ae_gateway_service_name: "AEGatewayService"
@@ -214,3 +223,4 @@ liw_services_list:
     test_command:
       - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/MSession/Service.svc/hello"
       - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/MSession/Service.svc/hello"
+

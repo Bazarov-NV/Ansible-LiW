@@ -3,5 +3,6 @@
   "ansible.python.interpreterPath": "/bin/python3",
   "ansible.ansible.useFullyQualifiedCollectionNames": false,
   "ansible.validation.lint.enabled": false,
-  "editor.disableMonospaceOptimizations": true
+  "editor.disableMonospaceOptimizations": true,
+  "notebook.defaultFormatter": "redhat.vscode-yaml"
 }

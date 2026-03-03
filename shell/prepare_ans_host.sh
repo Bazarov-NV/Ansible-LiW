@@ -10,9 +10,9 @@
 # создаем папку монтирования
 #sudo mkdir /mnt/server_antor
 #команда монтирования
-#sudo mount -t cifs '//server.ANTOR.msk/антор/Отдел Внедрения/Релизы/LogistinWeb/Repo' /mnt/server_antor -o username=nbaz,password=\$Dbcgu\!2089,domain=ANTOR.msk
+#sudo mount -t cifs '//server.ANTOR.msk/антор/Отдел Внедрения/Релизы/LogistinWeb/Repo' /mnt/server_antor -o username=nbaz,password=,domain=ANTOR.msk
 #добавляем в fstab
-#//server.ANTOR.msk/антор/Отдел\040внедрения/Релизы/LogistinWeb/Repo /mnt/server_antor cifs username=nbaz,password=$Dbcgu!2089,domain=ANTOR.msk,nofail 0 0
+#//server.ANTOR.msk/антор/Отдел\040внедрения/Релизы/LogistinWeb/Repo /mnt/server_antor cifs username=nbaz,password=,domain=ANTOR.msk,nofail 0 0
 
 # install ssh
 #sudo apt update
