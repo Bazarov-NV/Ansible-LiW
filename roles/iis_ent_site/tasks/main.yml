@@ -34,7 +34,9 @@
     attributes:
       autoStart: false
   loop: "{{ app_pools_info.app_pools }}"
-  when: app_pool_created.changed and item.name not in ("{{ antor_ent_site }}", "{{ webdav_site }}")
+  loop_control:
+    label: "{{ item.name }} stopped"
+  when: app_pool_created.changed and item.name not in (antor_ent_site, webdav_site)
 
 - name: "Установка сертификатов АНТОР"
   include_role:

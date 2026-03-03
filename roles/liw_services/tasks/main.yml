@@ -82,6 +82,8 @@
     flags: /MIR
     recurse: true
   loop: "{{ liw_services_list }}"
+  loop_control:
+    label: "Copy {{ liw_services_distr }}\\{{ item.name }}\\ to {{ item.install_dir }}"
   tags: test
 
 - name: Set configs liw services
@@ -94,6 +96,8 @@
     state: present
     text: "{{ item.1.text }}"
   loop: "{{ lookup('ansible.builtin.subelements', liw_services_list, 'config_change') }}"
+  loop_control:
+    label: "{{ item.0.install_dir }}\\{{item.0.config_file}} --- {{ item.1.xpath }}"  
   tags: test
 
 - name: Add web application
@@ -101,6 +105,8 @@
     New-WebApplication -Name {{ item.webapp_name }} -Site "{{ antor_ent_site }}" -PhysicalPath "{{ item.install_dir }}" -ApplicationPool "{{ antor_ent_site }}"
   register: r1  
   loop: "{{ liw_services_list }}"
+  loop_control:
+    label: "{{ item.webapp_name }}"    
   failed_when: r1.rc != 0 and 'Destination element already exists' not in r1.stderr
   tags: test
 
