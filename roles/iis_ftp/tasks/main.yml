@@ -33,11 +33,11 @@
 #     physical_path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ ftp_folder }}"
 #     state: stopped
 
-- name: Add dd bindings to FTP site
-  win_iis_webbinding:
-    name: "{{ ftp_site_name }}"
-    port: "{{  ftp_port }}"
-    protocol: ftp
+# - name: Add dd bindings to FTP site
+#   win_iis_webbinding:
+#     name: "{{ ftp_site_name }}"
+#     port: "{{  ftp_port }}"
+#     protocol: ftp
 
 - name: Start IIS FTP site
   microsoft.iis.website:
@@ -96,6 +96,27 @@
 
 - name: Reboot server FTP
   ansible.windows.win_reboot:
+  when: not ftp_installed
+
+- name: Tests FTP
+  shell: "{{ item }}"  
+  loop:
+    - curl -u {{ user_antor }}:{{ passw_user_antor }} ftp://{{ ext_ip_address_host }}:{{ ext_ftp_port }}/
+    - curl -ftps --tlsv1.2 -u {{ user_antor }}:{{ passw_user_antor }} ftp://{{ ext_ip_address_host }}:{{ ext_ftp_port }}/
+  register: tr1  
+  delegate_to: 127.0.0.1
+  tags: test
+- name: d1
+  debug:
+    var: tr1
+  tags: test    
+- name: Display FTP test results  
+  pause:
+    prompt: "FTP работает корректно"
+    seconds: 10
+  when: (tr1.results[0].rc == 0) and (tr1.results[1].rc == 0)
+  tags: test  
+
 
 - name: Set fact component installed
   set_fact:

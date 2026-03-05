@@ -187,15 +187,17 @@ liw_services_list:
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','LOGEntities','TmpDir']) | list }}"
     test_command:
       - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXLog/LogDataService.svc/A__LOG/"
-      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXLog/Service.svc/rest/hello"
-      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXLog/Service.svc/rest/hello"
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXLog/Service.svc/rest/"   
+      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXLog/Service.svc/rest/"
   - name: "AXSession"
     repo_path: "/AXSession"
     install_dir: "{{ iis_folder }}\\AXSession"
     webapp_name: "AXSession"
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir']) | list }}"
-    test_command: []
+    test_command:
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXSession/Service.svc/rest/rest"   
+      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXSession/Service.svc/rest/rest"
   - name: "AXStream"
     repo_path: "/AXStream"
     install_dir: "{{ iis_folder }}\\AXStream"
@@ -203,8 +205,8 @@ liw_services_list:
     config_file: "Web.config"
     config_change: "{{ config_params | selectattr('name', 'in', ['ConnString','TmpDir', 'ReportDir','ReportServiceAddress1','ReportServicePort1']) | list }}"
     test_command:
-      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXStream/Service.svc/rest/hello"
-      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXStream/Service.svc/rest/hello"
+      - "curl http://{{ ext_ip_address_host }}:{{ http_port_ae_site }}/AXStream/Service.svc/rest/"
+      - "curl -k https://{{ ext_ip_address_host }}:{{ https_port1_ae_site }}/AXStream/Service.svc/rest/"
   - name: "LiwAPI"
     repo_path: "/LiwAPI"
     install_dir: "{{ iis_folder }}\\LiwAPI"

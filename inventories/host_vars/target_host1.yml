@@ -48,6 +48,7 @@ ftp_folder: "FTP_ANTOR"
 ftp_port_range1: "6001"
 ftp_port_range2: "7000"
 ftp_port: "21"
+ext_ftp_port: "4421"
 #webdav
 user_webdav: "AE-MEDIA"
 passw_user_webdav: !vault |

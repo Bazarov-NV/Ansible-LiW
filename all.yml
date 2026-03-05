@@ -195,15 +195,10 @@
       ignore_errors: true
       no_log: true
       failed_when: false
-    - name: d1
-      debug: 
-        var: website_info_result
-    - name: p1
-      pause:
     - name: Set fact iis installed
       set_fact:
         iis_installed: true
-      when: "'Site {{ antor_ent_site }} exists' in website_info_result.stdout"
+      when: "'Site ' ~antor_ent_site~' exists' in website_info_result.stdout"
     - name: d1
       debug: 
         var: iis_installed
@@ -327,16 +322,19 @@
       until: ( user_confirmation_input1.user_input | lower in yes_answer) or (user_confirmation_input1.user_input | lower  in no_answer)
       retries: 100
       delay: 0      
-      when: not all_install and not silence_mode and 'iis_ftp' in list_components   
+      when: not all_install and not silence_mode and 'iis_ftp' in list_components
+
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
+
     - name: "Установка ANTOR FTP"
       include_role:
         name: iis_ftp
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'iis_ftp' in list_components )
+
     - name: Clear answer
       set_fact:
         user_answer: ""
@@ -351,15 +349,18 @@
       retries: 100
       delay: 0      
       when: not all_install and not silence_mode and 'iis_webdav' in list_components
+      tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined        
+      tags: test
     - name: "Установка WebDav"
       include_role:
         name: iis_webdav
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'iis_webdav' in list_components )
+      tags: test 
     - name: Clear answer
       set_fact:
         user_answer: ""
@@ -375,18 +376,18 @@
       retries: 100
       delay: 0      
       when: not all_install and not silence_mode and 'ae_gateway' in list_components
-      #tags: test
+      ##tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-      #tags: test
+      ##tags: test
     - name: "Установка AEGatewayService"
       include_role:
         name: ae_gateway
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'ae_gateway' in list_components )
-      #tags: test
+      ##tags: test
     - name: Clear answer
       set_fact:
         user_answer: ""
@@ -401,18 +402,18 @@
       retries: 100
       delay: 0      
       when: not all_install and not silence_mode and 'ae_reportsservice' in list_components
-      tags: test
+      #tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-      tags: test
+      #tags: test
     - name: "Установка AEReportsService"
       include_role:
         name: ae_reportsservice
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'ae_reportsservice' in list_components )
-      tags: test  
+      #tags: test  
     - name: Clear answer
       set_fact:
         user_answer: ""
@@ -427,18 +428,18 @@
       retries: 100
       delay: 0      
       when: not all_install and not silence_mode and 'liw_services' in list_components
-      #tags: test
+      ##tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-      #tags: test
+      ##tags: test
     - name: "Установка LIW services"
       include_role:
         name: liw_services
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'liw_services' in list_components )
-      #tags: test
+      ##tags: test
     - name: Clear answer
       set_fact:
         user_answer: ""
@@ -453,18 +454,18 @@
       retries: 100
       delay: 0      
       when: not all_install and not silence_mode and 'fuel_card' in list_components
-      tags: test
+      #tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-      tags: test
+      #tags: test
     - name: "Установка FuelCard service"
       include_role:
         name: fuel_card
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode and 'fuel_card' in list_components )
-      tags: test
+      #tags: test
     - name: Clear answer
       set_fact:
         user_answer: ""
@@ -479,15 +480,15 @@
       retries: 100
       delay: 0      
       when: not all_install and not silence_mode and 'ppsvc' in list_components
-      tags: test
+      #tags: test
     - name: Set answer
       set_fact:
         user_answer: "{{ user_confirmation_input1.user_input | lower }}"
       when: user_confirmation_input1.user_input is defined
-      tags: test
+      #tags: test
     - name: "Установка Point Processing Service service"
       include_role:
         name: ppsvc
       when: (all_install | bool) or (user_answer in yes_answer)
         or (silence_mode  and 'ppsvc' in list_components )
-      tags: test
+      #tags: test

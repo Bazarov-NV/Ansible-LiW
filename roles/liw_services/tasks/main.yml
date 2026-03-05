@@ -126,6 +126,9 @@
   loop_control:
     label: "{{ item.cmd }}"
   tags: test
+- name: Display test results
+  pause:    
+    seconds: 20  
 
 - name: Set fact component installed
   set_fact:

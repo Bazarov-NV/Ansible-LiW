@@ -12,13 +12,13 @@
     state: present
     groups:
       - Users
-  tags: test
+  #tags: test
 
 - name: Create webdav folder
   win_file:
     path: "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}"
     state: directory
-  tags: test
+  #tags: test
 
 - name: Set rights webdav folder
   win_acl:
@@ -27,12 +27,12 @@
     rights: FullControl
     state: present
     type: allow
-  tags: test
+  #tags: test
 
 - name: Get all app pools
   microsoft.iis.web_app_pool_info:
   register: app_pools_info
-  tags: test
+  #tags: test
 
 - name: Stop each application pool
   microsoft.iis.web_app_pool:
@@ -42,21 +42,21 @@
       autoStart: false
   loop: "{{ app_pools_info.app_pools }}"    
   loop_control:
-    label: "{{ item.name }} stopped"
+    label: "{{ item.name }}"
   when: item.name not in (antor_ent_site,  webdav_site)
-  tags: test
+  #tags: test
 
 - name: Create webdav application pool in 'Started' state
   microsoft.iis.web_app_pool:
     name: "{{ webdav_site }}"
     state: started
-  tags: test
+  #tags: test
 
 - name: Change .NET CLR
   win_shell: |
     Import-Module WebAdministration
     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name "managedRuntimeVersion" -Value ""
-  tags: test
+  #tags: test
 
 # - name: Set WebDav pool authorization
 #   win_shell: |
@@ -66,13 +66,13 @@
 #     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name processModel.identityType -Value Custom
 #     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name processModel.userName -Value $username
 #     Set-ItemProperty -Path "IIS:\AppPools\{{ webdav_site }}" -Name processModel.password -Value $password
-#   tags: test
+#   #tags: test
 
 - name: Install ANTOR certificates
   include_role:
     name: antor_cert
   when: not antor_cert_installed  
-  tags: test
+  #tags: test
 
 - name: Obtain information certificate
   win_shell: |
@@ -84,7 +84,7 @@
       Write-Error "Certificate not found"
     }
   register: cert_hash_result
-  tags: test
+  #tags: test
 
 - name: Create a new site WebDAV
   microsoft.iis.website:
@@ -99,18 +99,18 @@
           protocol: https
           certificate_hash: "{{ cert_hash_result.stdout_lines[0] }}"
     state: stopped
-  tags: test
+  #tags: test
 
 # - name: Download WEBDAV web.config
 #   win_shell: wget {{ ftp_server_repo }}/{{ ftp_folder_repo }}/{{ webdav_config_file }} -O "{{ disk_install }}\\{{ antor_root_folder }}\\{{ webdav_folder}}\\web.config"
-#   tags: test
+#   #tags: test
 
 - name: Behavior site AE
   win_shell: |
     Import-Module WebAdministration
     $site_name = "{{ webdav_site }}"
     Set-ItemProperty IIS:\sites\$site_name -name EnabledProtocols -Value "http, https"
-  tags: test
+  #tags: test
 
 - name: Configure WebvDav site
   win_shell: |
@@ -132,7 +132,7 @@
     Add-WebConfigurationProperty -Filter "system.webServer/handlers"  -Name "." -Value $handler2 -PSPath IIS:\ -Location $sn
   register: r1
   failed_when: "'add duplicate collection' not in r1.stdout and 'ERROR' in r1.stdout"
-  tags: test
+  #tags: test
 
 - name: add firewall rule ANTOR Webdav
   win_firewall_rule:
@@ -150,22 +150,75 @@
   loop:
     - "{{ http_port_webdav }}"
     - "{{ https_port_webdav }}"
-  tags: test
+  #tags: test
 
 - name: Stop the default IIS web site
   microsoft.iis.website:
     name: "Default Web Site"
     state: stopped
-  tags: test
+  #tags: test
 
 - name: Start site WebDAV
   microsoft.iis.website:
     name: "{{ webdav_site }}"
     state: started
-  tags: test
+  #tags: test
 
 - name: Reboot server WebDav
   ansible.windows.win_reboot:
+  when: not web_installed
+
+
+- name: Tests WebDAV
+  shell: |
+    touch test12345.txt
+    curl -T test12345.txt {{ ext_ip_address_host }}:{{ http_port_webdav }} -u {{ user_webdav }}:{{ passw_user_webdav }}
+    rm test12345.txt
+    curl -o test12345.txt {{ ext_ip_address_host }}:{{ http_port_webdav }} -u {{ user_webdav }}:{{ passw_user_webdav }}
+    curl -X DELETE 'http://{{ ext_ip_address_host }}:{{ http_port_webdav }}/test12345.txt' -u {{ user_webdav }}:{{ passw_user_webdav }}
+    touch ssl_test12345.txt
+    curl -k -T ssl_test12345.txt https://{{ ext_ip_address_host }}:{{ https_port_webdav }} -u {{ user_webdav }}:{{ passw_user_webdav }}
+    rm ssl_test12345.txt
+    curl -k -o ssl_test12345.txt https://{{ ext_ip_address_host }}:{{ https_port_webdav }} -u {{ user_webdav }}:{{ passw_user_webdav }}
+    curl -k -X DELETE 'https://{{ ext_ip_address_host }}:{{ https_port_webdav }}/ssl_test12345.txt' -u {{ user_webdav }}:{{ passw_user_webdav }}
+  delegate_to: 127.0.0.1
+  register: tr1
+  tags: test
+
+- name: d1
+  debug:
+    var: tr1
+  tags: test    
+
+- name: Check test files exists
+  stat:
+    path: "{{ item }}"
+  delegate_to: 127.0.0.1  
+  loop:
+    - test12345.txt
+    - ssl_test12345.txt
+  register: test_file_status
+  tags: test
+
+# - name: d12
+#   debug:
+#     msg: "test {{ test_file_status.results[0].stat['exists'] }} {{ test_file_status.results[1].stat['exists'] }} "
+#   tags: test    
+
+
+- name: Display WebDAV test results  
+  pause:
+    prompt: "WebDAV работает корректно"
+    seconds: 20
+  when: ( test_file_status.results[0].stat['exists'] | bool) and ( test_file_status.results[1].stat['exists'] | bool)
+  tags: test  
+
+- name: Delete test files
+  shell: |    
+    rm test12345.txt
+    rm ssl_test12345.txt
+  delegate_to: 127.0.0.1
+  tags: test  
 
 - name: Set fact component installed
   set_fact:

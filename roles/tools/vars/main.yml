@@ -1,11 +1,12 @@
 ---
 #Папка утилит LiW на внутреннем сервере АНТОР
-repo_utils_folder: "{{ repo_folder }}\\Utils"
+repo_utils_folder: "Utils"
 #Внешняя папка утилит LiW на внутреннем сервере АНТОР
 repo_utils_folder_ext: "{{ repo_folder_ext }}\\Utils"
 # Имя архива со всеми админскими утилиатми
 tools_file_7z: "Utils.7z"
 antor_tools_folder: "{{ disk_install}}\\{{ antor_root_folder }}\\Utils"
+repo_utils_mnt: "{{ repo_folder_mnt }}/Utils"
 # Список админских утилит с параметрами для установки
 tools_list:
   - tool_name: "Background info"
